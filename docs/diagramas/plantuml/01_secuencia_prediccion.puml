@@ -1,0 +1,43 @@
+@startuml
+title Diagrama de secuencia - Prediccion de potencial de jugador
+
+actor "Usuario autenticado\nScout / Admin / Director" as Usuario
+participant "Navegador\nBootstrap + Jinja2" as Browser
+participant "Flask App\nplayers blueprint" as Flask
+participant "SQLAlchemy\nSession / ORM" as ORM
+database "Base de datos\nSQLite local / PostgreSQL Render" as DB
+participant "Preprocesamiento\npreprocessing.py\npreprocessor.joblib" as Prep
+participant "Runtime ML\nml/runtime.py" as Runtime
+participant "Modelo PyTorch\nPlayerNet en memoria" as Model
+participant "Calibrador\nprobability_calibrator.joblib" as Calibrator
+participant "Template Jinja2\nprediction.html" as View
+
+Usuario -> Browser: Abre la proyeccion del jugador
+Browser -> Flask: GET /player/{player_id}/predict
+
+Flask -> ORM: Consultar Player e historiales asociados
+ORM -> DB: SELECT jugador, atributos, estadisticas y reportes
+DB --> ORM: Datos persistidos
+ORM --> Flask: Objeto Player y datos relacionados
+
+alt Jugador encontrado y modelo cargado
+    Flask -> Prep: Construir features del jugador
+    Prep --> Flask: Vector transformado\ninput_dim=68
+    Flask -> Runtime: Solicitar inferencia de potencial
+    Runtime -> Model: forward(vector)
+    Model --> Runtime: Logit / probabilidad base
+    Runtime -> Calibrator: Ajustar probabilidad si existe calibrador
+    Calibrator --> Runtime: Probabilidad calibrada
+    Runtime --> Flask: Potencial estimado y categoria\nBajo / Medio / Alto
+    Flask -> View: render_template(prediction.html)
+    View --> Flask: HTML renderizado
+    Flask --> Browser: 200 OK
+    Browser --> Usuario: Muestra datos, potencial y decision scout
+else Modelo no disponible o datos insuficientes
+    Flask -> View: Renderizar vista con advertencia controlada
+    View --> Flask: HTML con mensaje de limitacion
+    Flask --> Browser: 200 OK
+    Browser --> Usuario: Informa que no se pudo calcular la prediccion
+end
+
+@enduml

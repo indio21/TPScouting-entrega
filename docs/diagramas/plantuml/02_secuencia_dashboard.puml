@@ -1,0 +1,53 @@
+@startuml
+title Diagrama de secuencia - Panel general / Dashboard
+
+actor "Usuario autenticado\nScout / Admin / Director" as Usuario
+participant "Navegador\nBootstrap + Chart.js" as Browser
+participant "Flask App\nroutes/dashboard.py" as Dashboard
+participant "Control de sesion\nlogin_required" as Auth
+participant "Cache in-memory\nservices/cache.py" as Cache
+participant "SQLAlchemy\nSession / ORM" as ORM
+database "Base de datos\nSQLite local / PostgreSQL Render" as DB
+participant "Logica de dashboard\nmetricas y rankings" as Logic
+participant "Template Jinja2\ndashboard.html" as Template
+
+Usuario -> Browser: Abre Panel general
+Browser -> Dashboard: GET /dashboard?period=...
+
+Dashboard -> Auth: Validar sesion y rol
+Auth --> Dashboard: Usuario autorizado
+
+Dashboard -> Dashboard: Determinar modo\nscout/admin o director
+Dashboard -> Cache: Buscar HTML cacheado\nclave por rol y periodo
+
+alt Cache disponible
+    Cache --> Dashboard: HTML cacheado
+    Dashboard --> Browser: 200 OK
+    Browser --> Usuario: Muestra panel general
+else Cache no disponible
+    Cache --> Dashboard: Sin entrada valida
+    Dashboard -> Dashboard: Validar filtros de fecha\nperiod/start/end
+    Dashboard -> ORM: Abrir Session()
+
+    ORM -> DB: Conteo de jugadores por posicion
+    DB --> ORM: Agregados por posicion
+
+    ORM -> DB: Total de jugadores y promedios de atributos
+    DB --> ORM: KPIs generales
+
+    ORM -> DB: Jugadores, historiales, reportes,\ndisponibilidad y evaluaciones fisicas
+    DB --> ORM: Datos operativos del periodo
+    ORM --> Dashboard: Filas y agregados consultados
+
+    Dashboard -> Logic: Calcular rankings, alertas,\nactividad reciente y oportunidades
+    Logic --> Dashboard: Datos listos para UI
+
+    Dashboard -> Template: render_template(dashboard.html)
+    Template --> Dashboard: HTML renderizado
+
+    Dashboard -> Cache: Guardar HTML con TTL
+    Dashboard --> Browser: 200 OK
+    Browser --> Usuario: Muestra KPIs, listas y graficos Chart.js
+end
+
+@enduml

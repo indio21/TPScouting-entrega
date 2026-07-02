@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Importar jugadores{% endblock %}
+
+{% block content %}
+<section class="profile-hero mb-4">
+    <div class="profile-hero-body">
+        <div class="profile-identity">
+            <div class="profile-icon-tile" aria-hidden="true"><i class="bi bi-filetype-csv"></i></div>
+            <div class="profile-title-stack">
+                <span class="profile-eyebrow">Importacion masiva</span>
+                <h1>Importar jugadores</h1>
+                <div class="profile-meta">
+                    <span class="profile-chip"><i class="bi bi-table"></i> Plantilla CSV</span>
+                    <span class="profile-chip"><i class="bi bi-calendar-event"></i> Categoria por nacimiento</span>
+                    <span class="profile-chip is-success"><i class="bi bi-database-check"></i> Cupo {{ current_total }} / {{ max_players }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-actions">
+            <div class="profile-score">
+                <div class="label">Disponibles</div>
+                <div class="value">{{ max_players - current_total }}</div>
+                <div class="note">cupos restantes</div>
+            </div>
+            <div class="profile-action-bar">
+                <a class="btn btn-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('download_players_import_template') }}">
+                    <i class="bi bi-download"></i> Descargar plantilla
+                </a>
+                <a class="btn btn-outline-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('manage_players') }}">
+                    <i class="bi bi-person-plus"></i> Alta individual
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="profile-metric-grid">
+    <div class="profile-metric-card">
+        <span class="label">Formato</span>
+        <span class="value">CSV</span>
+        <span class="hint">Compatible con Excel</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Campos</span>
+        <span class="value">{{ import_columns|length }}</span>
+        <span class="hint">Columnas de plantilla</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Validas</span>
+        <span class="value">{{ valid_count }}</span>
+        <span class="hint">Listas para importar</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Con errores</span>
+        <span class="value">{{ invalid_count }}</span>
+        <span class="hint">Revisar antes de guardar</span>
+    </div>
+</div>
+
+<section class="card management-panel mb-4">
+    <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
+        <div>
+            <span>Archivo CSV</span>
+            <small class="text-muted d-block">Descarga la plantilla, completala en Excel y subila para validar.</small>
+        </div>
+        <a class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" href="{{ url_for('download_players_import_template') }}">
+            <i class="bi bi-download"></i> Plantilla
+        </a>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" class="row g-3 align-items-end">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="mode" value="preview">
+            <div class="col-lg-8">
+                <label class="form-label" for="csv_file">Seleccionar archivo</label>
+                <input id="csv_file" class="form-control" type="file" name="csv_file" accept=".csv,text/csv" required>
+                <div class="form-text">Columnas esperadas: {{ import_columns|join(', ') }}.</div>
+            </div>
+            <div class="col-lg-4">
+                <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-search"></i> Previsualizar
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+{% if preview_rows %}
+<section class="card dashboard-panel mb-4">
+    <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
+        <div>
+            <div class="fw-semibold">Previsualizacion</div>
+            <small class="text-muted">Solo se guardan las filas validas al confirmar.</small>
+        </div>
+        {% if valid_count %}
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="mode" value="confirm">
+            <input type="hidden" name="import_payload" value="{{ import_payload }}">
+            <button type="submit" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+                <i class="bi bi-check-lg"></i> Importar {{ valid_count }} filas validas
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0 history-table">
+            <thead class="table-light">
+                <tr>
+                    <th>Linea</th>
+                    <th>Jugador</th>
+                    <th>DNI / ID</th>
+                    <th>Nacimiento</th>
+                    <th>Categoria</th>
+                    <th>Edad</th>
+                    <th>Posicion</th>
+                    <th>Estado</th>
+                    <th>Mensajes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in preview_rows %}
+                <tr class="{% if row.errors %}table-danger{% elif row.warnings %}table-warning{% else %}table-success{% endif %}">
+                    <td>{{ row.line }}</td>
+                    <td>{{ row.data.name or '-' }}</td>
+                    <td>{{ row.data.national_id or '-' }}</td>
+                    <td>{{ row.data.birth_date or '-' }}</td>
+                    <td>Cat. {{ row.category_year or 'N/D' }}</td>
+                    <td>{{ row.data.age }}</td>
+                    <td>{{ display_position(row.data.position) if row.data.position else '-' }}</td>
+                    <td>
+                        {% if row.errors %}
+                        <span class="badge bg-danger">Error</span>
+                        {% elif row.warnings %}
+                        <span class="badge bg-warning text-dark">Advertencia</span>
+                        {% else %}
+                        <span class="badge bg-success">Valida</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.errors %}
+                        <div class="small">{{ row.errors|join(' ') }}</div>
+                        {% endif %}
+                        {% if row.warnings %}
+                        <div class="small text-muted">{{ row.warnings|join(' ') }}</div>
+                        {% endif %}
+                        {% if not row.errors and not row.warnings %}
+                        <span class="small text-muted">Lista para importar.</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

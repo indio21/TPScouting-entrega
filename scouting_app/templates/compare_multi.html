@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block title %}Comparador multiple{% endblock %}
+
+{% block content %}
+<section class="profile-hero mb-4">
+    <div class="profile-hero-body">
+        <div class="profile-identity">
+            <div class="profile-icon-tile" aria-hidden="true"><i class="bi bi-ui-radios-grid"></i></div>
+            <div class="profile-title-stack">
+                <span class="profile-eyebrow">Comparador multiple</span>
+                <h1>Mapa de talento</h1>
+                <div class="profile-meta">
+                    <span class="profile-chip"><i class="bi bi-images"></i> Top por puesto</span>
+                    <span class="profile-chip"><i class="bi bi-crosshair"></i> Potencial vs fit</span>
+                    <span class="profile-chip is-success"><i class="bi bi-people"></i> Hasta 40 perfiles</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-actions">
+            <div class="profile-score">
+                <div class="label">Perfiles mapeados</div>
+                <div class="value">{{ talent_map_rows|length }}</div>
+                <div class="note">Top 10 por familia de puesto</div>
+            </div>
+            <div class="profile-action-bar">
+                <a class="btn btn-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('compare_players') }}">
+                    <i class="bi bi-columns-gap"></i> Comparar 2
+                </a>
+                <a class="btn btn-outline-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+                    <i class="bi bi-list-ul"></i> Listado
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if truncated %}
+<div class="alert alert-warning app-alert small">
+    Se muestran solo los primeros {{ max_players }} jugadores ordenados por nombre para mejorar el rendimiento del comparador.
+</div>
+{% endif %}
+
+<section class="card mb-4">
+    <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
+        <div>
+            <span>Mapa visual de talento</span>
+            <small class="text-muted d-block">Eje X: potencial combinado. Eje Y: rendimiento ponderado para el puesto.</small>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <span class="badge bg-light text-dark">Promedio potencial: {{ talent_map_avg_probability }}%</span>
+            <span class="badge bg-light text-dark">Promedio fit: {{ talent_map_avg_fit_score }}</span>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if talent_map_rows %}
+        <div class="talent-map" aria-label="Mapa de talento por potencial y rendimiento">
+            <div class="talent-map-axis is-y" style="left: {{ talent_map_avg_probability }}%;"></div>
+            <div class="talent-map-axis is-x" style="bottom: {{ (talent_map_avg_fit_score / 20 * 100)|round(1) }}%;"></div>
+            <span class="talent-map-label" style="left: {{ talent_map_avg_probability }}%; top: .75rem; transform: translateX(-50%);">Promedio potencial</span>
+            <span class="talent-map-label" style="left: .75rem; bottom: {{ (talent_map_avg_fit_score / 20 * 100)|round(1) }}%; transform: translateY(50%);">Promedio fit</span>
+
+            {% for row in talent_map_rows %}
+            <a class="talent-map-point"
+               href="{{ url_for('player_detail', player_id=row.id) }}"
+               style="left: {{ row.probability }}%; bottom: {{ (row.fit_score / 20 * 100)|round(1) }}%;"
+               aria-label="{{ row.name }} potencial {{ row.probability }} rendimiento {{ row.fit_score }}">
+                <img src="{{ row.photo_url }}" alt="Foto {{ row.name }}" loading="lazy">
+                <span class="talent-map-tooltip">
+                    <strong>{{ row.name }}</strong><br>
+                    {{ display_position(row.position) }} &middot; {{ row.age }} anos &middot; Cat. {{ row.juvenile_category or 'N/D' }}<br>
+                    Potencial: {{ row.probability }}%<br>
+                    Fit: {{ row.fit_score }}<br>
+                    {{ row.club or 'Sin club' }}
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+        <div class="d-flex justify-content-between text-muted small mt-2">
+            <span>Bajo potencial</span>
+            <span>Alto potencial</span>
+        </div>
+        {% else %}
+        <div class="talent-map-empty">Todavia no hay datos suficientes para construir el mapa.</div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="card mb-4">
+    <div class="card-header">Top 10 por puesto</div>
+    <div class="card-body">
+        <ul class="nav nav-tabs mb-3" id="topPositionTabs" role="tablist">
+            {% for tab in position_tabs %}
+            <li class="nav-item" role="presentation">
+                <button
+                    class="nav-link {% if loop.first %}active{% endif %}"
+                    id="tab-{{ tab.key }}"
+                    data-bs-toggle="tab"
+                    data-bs-target="#pane-{{ tab.key }}"
+                    type="button"
+                    role="tab"
+                    aria-controls="pane-{{ tab.key }}"
+                    aria-selected="{{ 'true' if loop.first else 'false' }}"
+                >
+                    {{ tab.label }}
+                </button>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <div class="tab-content" id="topPositionTabsContent">
+            {% for tab in position_tabs %}
+            <div
+                class="tab-pane fade {% if loop.first %}show active{% endif %}"
+                id="pane-{{ tab.key }}"
+                role="tabpanel"
+                aria-labelledby="tab-{{ tab.key }}"
+            >
+                {% set rows = ranking_by_position.get(tab.key, []) %}
+                {% if rows %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped align-middle mb-0 history-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Jugador</th>
+                                <th>Puesto</th>
+                                <th>Edad</th>
+                                <th>Categoria</th>
+                                <th>Club</th>
+                                <th>Fit</th>
+                                <th>Potencial</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{ row.photo_url }}" alt="Foto {{ row.name }}" class="player-avatar-sm" loading="lazy">
+                                        <a href="{{ url_for('player_detail', player_id=row.id) }}">{{ row.name }}</a>
+                                    </div>
+                                </td>
+                                <td>{{ display_position(row.position) }}</td>
+                                <td>{{ row.age }}</td>
+                                <td>Cat. {{ row.juvenile_category or 'N/D' }}</td>
+                                <td>{{ row.club or 'Sin club' }}</td>
+                                <td>{{ row.fit_score }}</td>
+                                <td>
+                                    <span class="badge {% if row.category == 'Alto potencial' %}bg-success{% elif row.category == 'Potencial medio' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                        {{ row.probability }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">Todavia no hay jugadores para este puesto.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <small class="text-muted d-block mt-2">Defensas incluye jugadores cargados como defensa y lateral.</small>
+    </div>
+</section>
+
+<form method="post" class="compare-select-card mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-lg-8">
+            <label class="form-label" for="players">Jugadores</label>
+            <select id="players" name="players" class="form-select" multiple size="10" required>
+                {% for player in players %}
+                <option value="{{ player.id }}" {% if player.id in selected_ids %}selected{% endif %}>
+                    {{ player.name }} ({{ display_position(player.position) }})
+                </option>
+                {% endfor %}
+            </select>
+            <div class="form-text">Manten presionada Ctrl para seleccionar multiples jugadores. La comparacion usa hasta diez.</div>
+        </div>
+        <div class="col-lg-4">
+            <label class="form-label" for="target_position">Posicion objetivo</label>
+            <select id="target_position" name="target_position" class="form-select">
+                <option value="">Automatica</option>
+                {% for pos in ['Portero','Defensa','Lateral','Mediocampista','Delantero'] %}
+                <option value="{{ pos }}" {% if target_position == pos %}selected{% endif %}>{{ display_position(pos) }}</option>
+                {% endfor %}
+            </select>
+            <div class="form-text">Ajusta el rendimiento total segun el rol.</div>
+            <button type="submit" class="btn btn-primary w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-arrow-left-right"></i> Comparar seleccion
+            </button>
+        </div>
+    </div>
+</form>
+
+{% if comparison %}
+<section class="card mb-4">
+    <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
+        <div>
+            <span>Ranking por atributos</span>
+            {% if comparison.target_position %}
+            <small class="text-muted d-block">Puntajes ponderados para {{ display_position(comparison.target_position) }}.</small>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle mb-0 history-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Jugador</th>
+                        <th>Posicion</th>
+                        <th>Edad</th>
+                        <th>Categoria</th>
+                        {% for label in comparison.chart_payload.labels %}
+                        <th>{{ label }}</th>
+                        {% endfor %}
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in comparison.ranking %}
+                    <tr>
+                        <td>{{ row.name }}</td>
+                        <td>{{ display_position(row.position) if row.position else '-' }}</td>
+                        <td>{{ row.age }} anos</td>
+                        <td>Cat. {{ row.juvenile_category or 'N/D' }}</td>
+                        {% for label in comparison.chart_payload.labels %}
+                        <td>{{ row.attributes_map[label] }}</td>
+                        {% endfor %}
+                        <td><strong>{{ row.total }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <section class="card h-100">
+            <div class="card-header">Comparacion de atributos</div>
+            <div class="card-body">
+                <canvas id="comparisonBars"></canvas>
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="card h-100">
+            <div class="card-header">Promedio de rendimiento historico</div>
+            <div class="card-body">
+                <canvas id="scoreChart"></canvas>
+            </div>
+        </section>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% if comparison %}
+<script>
+const barsData = {{ comparison.chart_payload|tojson }};
+const barsCtx = document.getElementById('comparisonBars');
+if (barsCtx && window.Chart) {
+    new Chart(barsCtx, {
+        type: 'bar',
+        data: barsData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: { stacked: false },
+                y: { beginAtZero: true, suggestedMax: 20 }
+            }
+        }
+    });
+}
+
+const scoreData = {{ comparison.score_payload|tojson }};
+const scoreCtx = document.getElementById('scoreChart');
+if (scoreCtx && window.Chart) {
+    new Chart(scoreCtx, {
+        type: 'bar',
+        data: scoreData,
+        options: {
+            responsive: true,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: { beginAtZero: true, max: 10 }
+            }
+        }
+    });
+}
+</script>
+{% endif %}
+{% endblock %}

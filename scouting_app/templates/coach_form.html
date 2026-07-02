@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if coach else 'Nuevo' }} miembro del staff{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+  <div class="page-heading">
+    <h1 class="mb-1">{{ 'Editar' if coach else 'Nuevo' }} miembro del staff</h1>
+    <p class="text-muted mb-0">Carga datos basicos del perfil tecnico o empleado.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('list_coaches') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <i class="bi bi-arrow-left"></i> Volver
+    </a>
+  </div>
+</div>
+
+<form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="form-section">
+    <div class="form-section-title">Datos personales</div>
+    <div class="row g-3">
+      <div class="col-md-8">
+        <label class="form-label">Nombre</label>
+        <input type="text" name="name" class="form-control" value="{{ coach.name if coach else '' }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Edad</label>
+        <input type="number" name="age" class="form-control" value="{{ coach.age if coach else '' }}">
+      </div>
+    </div>
+  </div>
+  <div class="form-section">
+    <div class="form-section-title">Datos institucionales</div>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Rol</label>
+        <input type="text" name="role" class="form-control" value="{{ coach.role if coach else '' }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Club</label>
+        <input type="text" name="club" class="form-control" value="{{ coach.club if coach else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Pais</label>
+        <input type="text" name="country" class="form-control" value="{{ coach.country if coach else '' }}">
+      </div>
+    </div>
+  </div>
+  <div class="mt-4 page-actions">
+    <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+      <i class="bi bi-check-lg"></i> Guardar
+    </button>
+    <a href="{{ url_for('list_coaches') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <i class="bi bi-x-lg"></i> Cancelar
+    </a>
+  </div>
+</form>
+{% endblock %}

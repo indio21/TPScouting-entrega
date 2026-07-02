@@ -1,0 +1,54 @@
+@startuml
+title Diagrama de despliegue - TPScouting en Render
+
+node "Usuario" {
+  artifact "Navegador Web" as Browser
+}
+
+cloud "Render" {
+  node "Web Service\nservicio Render publicado" as RenderWeb {
+    node "Gunicorn\n--workers 1 --threads 2" as Gunicorn {
+      node "Flask App\nTPScouting" as FlaskApp {
+        artifact "app.py" as AppPy
+        folder "routes/" as Routes
+        folder "templates/" as Templates
+        folder "static/" as Static
+        folder "ml/" as MLRuntime
+        artifact "model.pt" as ModelPT
+        artifact "preprocessor.joblib" as Preprocessor
+        artifact "probability_calibrator.joblib" as Calibrator
+      }
+    }
+  }
+
+  database "PostgreSQL administrado\nBase demo" as RenderDB
+}
+
+node "Repositorio GitHub" as GitHub {
+  artifact "Codigo fuente" as Code
+  artifact "render.yaml" as RenderYaml
+  artifact "requirements.txt" as Requirements
+}
+
+Browser --> RenderWeb : HTTPS
+RenderWeb --> Gunicorn : Request HTTP interno
+Gunicorn --> FlaskApp : WSGI
+FlaskApp --> RenderDB : SQLAlchemy / psycopg
+FlaskApp --> ModelPT : carga modelo
+FlaskApp --> Preprocessor : carga preprocesador
+FlaskApp --> Calibrator : carga calibrador
+
+GitHub --> RenderWeb : Deploy desde rama main
+
+note right of RenderDB
+En produccion/demo no se usa SQLite
+para evitar perdida por filesystem efimero.
+end note
+
+note bottom of Gunicorn
+Configuracion documentada para MVP:
+1 worker + 2 threads.
+Los locks/cache son in-memory.
+end note
+
+@enduml

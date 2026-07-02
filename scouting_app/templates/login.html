@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Iniciar sesion{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<section class="profile-hero auth-hero mb-4">
+    <div class="profile-hero-body">
+        <div class="profile-identity">
+            <div class="profile-icon-tile auth-icon-tile">
+                <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <div class="profile-title-stack">
+                <span class="profile-eyebrow">Acceso privado</span>
+                <h1>TPScouting</h1>
+                <p class="auth-hero-copy mb-0">Panel de trabajo para seguimiento de talento juvenil.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="row g-4 justify-content-center align-items-stretch">
+    <div class="col-xl-6 col-lg-7">
+        <section class="card h-100 auth-card">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-box-arrow-in-right"></i> Credenciales
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>{{ error }}</span>
+                </div>
+                {% endif %}
+                <form method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="form-section">
+                        <div class="form-section-title">Usuario</div>
+                        <div class="mb-3">
+                            <label class="form-label" for="username">Nombre de usuario</label>
+                            <input id="username" type="text" class="form-control form-control-lg" name="username" autocomplete="username" required autofocus>
+                        </div>
+                        <div>
+                            <label class="form-label" for="password">Contrasena</label>
+                            <input id="password" type="password" class="form-control form-control-lg" name="password" autocomplete="current-password" required>
+                        </div>
+                    </div>
+                    <div class="crud-actions mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-check2-circle"></i> Entrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-5 col-lg-7">
+        <section class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-person-badge"></i> Roles de acceso
+            </div>
+            <div class="card-body">
+                <div class="info-list">
+                    <div class="info-row">
+                        <span>Scout</span>
+                        <strong>Gestion deportiva</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>Director</span>
+                        <strong>Lectura y seguimiento</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>Administrador</span>
+                        <strong>Operacion completa</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

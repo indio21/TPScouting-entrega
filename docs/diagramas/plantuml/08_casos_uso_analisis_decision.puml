@@ -1,0 +1,32 @@
+@startuml
+title Diagrama de casos de uso - Analisis y decision scout
+
+left to right direction
+
+actor "Usuario de analisis\nAdmin / Scout / Director" as Analyst
+actor "Sistema ML" as ML
+
+rectangle "Analisis y decision" {
+  usecase "Consultar panel general" as UC01
+  usecase "Ver prioridades\nde scouting" as UC02
+  usecase "Ver alertas fisicas\ny disponibilidad" as UC03
+  usecase "Consultar ficha\nde jugador" as UC04
+  usecase "Calcular potencial\nindividual" as UC05
+  usecase "Comparar dos\njugadores" as UC06
+  usecase "Comparar multiples\njugadores" as UC07
+  usecase "Revisar metricas\ny graficos" as UC08
+}
+
+Analyst --> UC01
+Analyst --> UC04
+Analyst --> UC05
+Analyst --> UC06
+Analyst --> UC07
+Analyst --> UC08
+ML --> UC05
+
+UC01 ..> UC02 : <<incluye>>
+UC01 ..> UC03 : <<incluye>>
+UC01 ..> UC08 : <<incluye>>
+
+@enduml

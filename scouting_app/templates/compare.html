@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Comparador 1 vs 1{% endblock %}
+
+{% block content %}
+<section class="profile-hero mb-4">
+    <div class="profile-hero-body">
+        <div class="profile-identity">
+            <div class="profile-icon-tile" aria-hidden="true"><i class="bi bi-columns-gap"></i></div>
+            <div class="profile-title-stack">
+                <span class="profile-eyebrow">Comparador 1 vs 1</span>
+                <h1>Duelo de jugadores</h1>
+                <div class="profile-meta">
+                    <span class="profile-chip"><i class="bi bi-people"></i> Dos perfiles</span>
+                    <span class="profile-chip"><i class="bi bi-bullseye"></i> Puesto objetivo</span>
+                    <span class="profile-chip is-success"><i class="bi bi-graph-up"></i> Potencial y atributos</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-actions">
+            <div class="profile-score">
+                <div class="label">Modo</div>
+                <div class="value">1v1</div>
+                <div class="note">Comparacion directa</div>
+            </div>
+            <div class="profile-action-bar">
+                <a class="btn btn-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('compare_multi') }}">
+                    <i class="bi bi-ui-radios-grid"></i> Ranking multiple
+                </a>
+                <a class="btn btn-outline-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+                    <i class="bi bi-list-ul"></i> Listado
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if truncated %}
+<div class="alert alert-warning app-alert small">
+    Se muestran solo los primeros {{ max_players }} jugadores ordenados por nombre para mejorar el rendimiento del comparador.
+</div>
+{% endif %}
+
+<form method="post" class="compare-select-card mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label" for="player_one">Jugador A</label>
+            <select id="player_one" name="player_one" class="form-select" required>
+                <option value="">Seleccionar...</option>
+                {% for player in players %}
+                <option value="{{ player.id }}" {% if selected_one == player.id %}selected{% endif %}>
+                    {{ player.name }} ({{ display_position(player.position) }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-5">
+            <label class="form-label" for="player_two">Jugador B</label>
+            <select id="player_two" name="player_two" class="form-select" required>
+                <option value="">Seleccionar...</option>
+                {% for player in players %}
+                <option value="{{ player.id }}" {% if selected_two == player.id %}selected{% endif %}>
+                    {{ player.name }} ({{ display_position(player.position) }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-lg-2">
+            <label class="form-label" for="target_position">Puesto</label>
+            <select id="target_position" name="target_position" class="form-select">
+                <option value="">Automatico</option>
+                {% for pos in ['Portero','Defensa','Lateral','Mediocampista','Delantero'] %}
+                <option value="{{ pos }}" {% if target_position == pos %}selected{% endif %}>{{ display_position(pos) }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 page-actions">
+            <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-left-right"></i> Comparar
+            </button>
+        </div>
+    </div>
+</form>
+
+{% if comparison %}
+{% set p1 = comparison.player_one %}
+{% set p2 = comparison.player_two %}
+<div class="profile-metric-grid">
+    <div class="profile-metric-card">
+        <span class="label">Jugador A</span>
+        <span class="value">{{ comparison.score_one|round(1) }}</span>
+        <span class="hint">{{ p1.name }}</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Jugador B</span>
+        <span class="value">{{ comparison.score_two|round(1) }}</span>
+        <span class="hint">{{ p2.name }}</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Puesto objetivo</span>
+        <span class="value">{{ display_position(comparison.target_position) if comparison.target_position else 'Auto' }}</span>
+        <span class="hint">Pesos aplicados</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Conclusion</span>
+        <span class="value">{% if comparison.score_one > comparison.score_two %}A{% elif comparison.score_two > comparison.score_one %}B{% else %}={% endif %}</span>
+        <span class="hint">Marcador tecnico</span>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    {% for player in [p1, p2] %}
+    <div class="col-lg-6">
+        <section class="compare-player-card">
+            <div class="compare-player-head">
+                <img src="{{ player.photo_url }}" alt="Foto {{ player.name }}" class="player-avatar-lg" loading="lazy">
+                <div>
+                    <div class="text-muted small text-uppercase fw-bold">Jugador {{ 'A' if loop.first else 'B' }}</div>
+                    <h2 class="h4 mb-1">{{ player.name }}</h2>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-primary">{{ display_position(player.position) }}</span>
+                        <span class="badge bg-light text-dark">{{ player.age }} anos</span>
+                        <span class="badge bg-light text-dark">Cat. {{ player.juvenile_category or 'N/D' }}</span>
+                        {% if player.club %}<span class="badge bg-secondary">{{ player.club }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="compare-score-grid">
+                <div class="compare-score-item">
+                    <span>Probabilidad</span>
+                    <strong>{{ (player.probability * 100)|round(1) }}%</strong>
+                </div>
+                <div class="compare-score-item">
+                    <span>Fit objetivo</span>
+                    <strong>{{ player.fit_score|round(1) }}</strong>
+                </div>
+                <div class="compare-score-item">
+                    <span>Historial</span>
+                    <strong>{{ player.avg_score or '--' }}</strong>
+                </div>
+                <div class="compare-score-item">
+                    <span>Alternativa</span>
+                    <strong>{{ display_position(player.best_position) }} {{ player.best_position_score|round(1) }}</strong>
+                </div>
+            </div>
+        </section>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-5">
+        <section class="card h-100">
+            <div class="card-header">Resumen y conclusion</div>
+            <div class="card-body">
+                {% if comparison.target_position %}
+                <p class="text-muted">Pesos aplicados para la posicion <strong>{{ display_position(comparison.target_position) }}</strong>.</p>
+                {% endif %}
+                <div class="alert alert-light border mb-0">
+                    <div class="fw-semibold mb-1">Lectura rapida</div>
+                    <p class="mb-0">{{ comparison.conclusion }}</p>
+                </div>
+            </div>
+        </section>
+    </div>
+    <div class="col-xl-7">
+        <section class="card h-100">
+            <div class="card-header">Radar de atributos</div>
+            <div class="card-body">
+                <canvas id="compareRadar" height="280"></canvas>
+            </div>
+        </section>
+    </div>
+</div>
+
+<section class="card mt-4">
+    <div class="card-header">Habilidades comparadas</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped mb-0 align-middle history-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Categoria</th>
+                        <th>{{ p1.name }}</th>
+                        <th>{{ p2.name }}</th>
+                        <th>Ganador</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in comparison.attributes %}
+                    <tr>
+                        <td>{{ row.label }}</td>
+                        <td>{{ row.value_one }}</td>
+                        <td>{{ row.value_two }}</td>
+                        <td>
+                            {% if row.winner == 1 %}
+                            <span class="badge bg-success">Jugador A</span>
+                            {% elif row.winner == 2 %}
+                            <span class="badge bg-primary">Jugador B</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Empate</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% if comparison %}
+<script>
+const compareRadarCtx = document.getElementById('compareRadar');
+if (compareRadarCtx && window.Chart) {
+    const labels = {{ comparison.attributes | map(attribute='label') | list | tojson }};
+    const valuesOne = {{ comparison.attributes | map(attribute='value_one') | list | tojson }};
+    const valuesTwo = {{ comparison.attributes | map(attribute='value_two') | list | tojson }};
+    new Chart(compareRadarCtx, {
+        type: 'radar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: {{ comparison.player_one.name | tojson }},
+                    data: valuesOne,
+                    backgroundColor: 'rgba(22, 163, 74, 0.16)',
+                    borderColor: '#16a34a',
+                    pointBackgroundColor: '#16a34a',
+                    borderWidth: 2
+                },
+                {
+                    label: {{ comparison.player_two.name | tojson }},
+                    data: valuesTwo,
+                    backgroundColor: 'rgba(37, 99, 235, 0.14)',
+                    borderColor: '#2563eb',
+                    pointBackgroundColor: '#2563eb',
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                r: { suggestedMin: 1, suggestedMax: 20, ticks: { stepSize: 5 } }
+            },
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+</script>
+{% endif %}
+{% endblock %}

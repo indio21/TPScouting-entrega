@@ -1,0 +1,55 @@
+@startuml
+title Diagrama de casos de uso - Vista general TPScouting
+
+left to right direction
+
+actor "Usuario del sistema" as User
+actor "Administrador" as Admin
+actor "Scout" as Scout
+actor "Director" as Director
+actor "Sistema ML" as ML
+
+rectangle "TPScouting / Scouting IA" {
+  usecase "Iniciar sesion" as UC01
+  usecase "Gestionar jugadores" as UC02
+  usecase "Cargar jugadores\nmasivamente" as UC03
+  usecase "Consultar ficha\nde jugador" as UC04
+  usecase "Registrar historiales\ny reportes" as UC05
+  usecase "Calcular potencial" as UC06
+  usecase "Analizar panel\ngeneral" as UC07
+  usecase "Comparar jugadores" as UC08
+  usecase "Administrar usuarios\ny configuracion" as UC09
+}
+
+Admin -|> User
+Scout -|> User
+Director -|> User
+
+User --> UC01
+User --> UC04
+User --> UC06
+User --> UC07
+User --> UC08
+
+Admin --> UC02
+Scout --> UC02
+Admin --> UC03
+Scout --> UC03
+Admin --> UC05
+Scout --> UC05
+ML --> UC06
+
+Admin --> UC09
+
+note right of UC03
+CSV compatible con Excel.
+Sin carga por textarea.
+end note
+
+note right of UC06
+Usa model.pt,
+preprocessor.joblib y
+probability_calibrator.joblib.
+end note
+
+@enduml

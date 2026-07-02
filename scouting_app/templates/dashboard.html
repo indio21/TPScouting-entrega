@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+{% block title %}Panel general{% endblock %}
+
+{% block content %}
+<section class="dashboard-hero mb-4">
+    <div>
+        <span class="profile-eyebrow">{{ 'Direccion tecnica' if dashboard_mode == 'director' else 'Scouting' }}</span>
+        <h1>{{ panel_title }}</h1>
+        <p class="mb-0">{{ panel_subtitle }}</p>
+    </div>
+    <div class="dashboard-hero-actions">
+        <a class="btn btn-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+            <i class="bi bi-people"></i> Jugadores
+        </a>
+        {% if can_manage_players %}
+        <a class="btn btn-outline-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('manage_players') }}">
+            <i class="bi bi-plus-lg"></i> Gestion
+        </a>
+        {% endif %}
+    </div>
+</section>
+
+<div class="dashboard-kpi-grid mb-4">
+    {% for card in kpi_cards %}
+    <div class="dashboard-kpi">
+        <span class="label">{{ card.label }}</span>
+        <span class="value">{{ card.value }}</span>
+        <span class="hint">{{ card.hint }}</span>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-7">
+        <section class="card h-100 dashboard-panel">
+            <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                <div>
+                    <div class="fw-semibold">{{ primary_title }}</div>
+                    <small class="text-muted">{{ 'Ordenado por ultima valoracion cargada' if primary_kind == 'form' else 'Ordenado por probabilidad combinada' }}</small>
+                </div>
+                {% if primary_kind == 'potential' %}
+                <a class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" href="{{ url_for('compare_multi') }}">
+                    <i class="bi bi-ui-radios-grid"></i> Ranking multiple
+                </a>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0 dashboard-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Jugador</th>
+                            <th>{{ 'Forma' if primary_kind == 'form' else 'Potencial' }}</th>
+                            <th class="text-end">Accion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in primary_rows %}
+                        <tr>
+                            <td class="text-muted">{{ loop.index }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ row.name }}</div>
+                                <small class="text-muted">
+                                    {{ row.position }}
+                                    {% if row.age is not none %}&middot; {{ row.age }} anos{% endif %}
+                                    &middot; Cat. {{ row.juvenile_category or 'N/D' }}
+                                    &middot; ID {{ row.id }}
+                                </small>
+                            </td>
+                            <td>
+                                {% if primary_kind == 'form' %}
+                                <span class="badge bg-primary">{{ row.score if row.score is not none else '--' }}</span>
+                                <small class="text-muted d-block">{{ row.date.strftime('%Y-%m-%d') if row.date else 'Sin fecha' }}</small>
+                                {% else %}
+                                <span class="badge {% if row.category == 'Alto potencial' %}bg-success{% elif row.category == 'Potencial medio' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ (row.probability * 100)|round(1) }}%
+                                </span>
+                                <small class="text-muted d-block">{{ row.category }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="dashboard-actions">
+                                    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('player_detail', player_id=row.id) }}">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a class="btn btn-success btn-sm" href="{{ url_for('predict_player', player_id=row.id) }}">
+                                        <i class="bi bi-graph-up"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">{{ primary_empty }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-5">
+        <section class="card h-100 dashboard-panel">
+            <div class="card-header">
+                <div class="fw-semibold">{{ secondary_title }}</div>
+                <small class="text-muted">{{ 'Jugadores con alerta fisica real' if dashboard_mode == 'director' else 'Jugadores sin actividad reciente' }}</small>
+            </div>
+            <div class="dashboard-list">
+                {% for row in secondary_rows %}
+                <div class="dashboard-list-item">
+                    <div>
+                        <div class="fw-semibold">{{ row.name }}</div>
+                        <small class="text-muted">
+                            {{ row.position }}
+                            {% if row.age is not none %}&middot; {{ row.age }} anos{% endif %}
+                            &middot; Cat. {{ row.juvenile_category or 'N/D' }}
+                            &middot;
+                            {% if dashboard_mode == 'director' %}
+                            {{ row.reasons }} &middot; {{ row.date.strftime('%Y-%m-%d') if row.date else 'Sin fecha' }}
+                            {% else %}
+                            Ultimo: {{ row.last_activity_label }}
+                            {% endif %}
+                        </small>
+                    </div>
+                    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('player_detail', player_id=row.id) }}">
+                        Ver
+                    </a>
+                </div>
+                {% else %}
+                <div class="empty-state-inline m-3">
+                    <i class="bi bi-check2-circle"></i>
+                    <div>
+                        <strong>Sin pendientes.</strong>
+                        <span>{{ secondary_empty }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-xl-4">
+        <section class="card h-100 dashboard-panel">
+            <div class="card-header">
+                <div class="fw-semibold">{{ 'A revisar' if dashboard_mode == 'director' else 'Oportunidades por puesto' }}</div>
+                <small class="text-muted">{{ 'Sin actividad reciente' if dashboard_mode == 'director' else 'Mejor candidato detectado por posicion' }}</small>
+            </div>
+            <div class="dashboard-list">
+                {% set compact_rows = followup_players if dashboard_mode == 'director' else top_by_position %}
+                {% for row in compact_rows %}
+                <div class="dashboard-list-item">
+                    <div>
+                        <div class="fw-semibold">{{ row.name }}</div>
+                        <small class="text-muted">
+                            {{ row.position }}
+                            {% if row.age is not none %}&middot; {{ row.age }} anos{% endif %}
+                            &middot; Cat. {{ row.juvenile_category or 'N/D' }}
+                            &middot;
+                            {% if dashboard_mode == 'director' %}
+                            Ultimo: {{ row.last_activity_label }}
+                            {% else %}
+                            {{ (row.probability * 100)|round(1) }}% &middot; {{ row.category }}
+                            {% endif %}
+                        </small>
+                    </div>
+                    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('player_detail', player_id=row.id) }}">Ver</a>
+                </div>
+                {% else %}
+                <div class="empty-state-inline m-3">
+                    <i class="bi bi-info-circle"></i>
+                    <div><strong>Sin datos.</strong><span>No hay registros suficientes para esta vista.</span></div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-8">
+        <section class="card h-100 dashboard-panel">
+            <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
+                <div>
+                    <div class="fw-semibold">Evolucion en periodo</div>
+                    <small class="text-muted">Delta de puntaje: ultimo menos primero</small>
+                </div>
+                <form method="get" class="dashboard-period-form">
+                    <select class="form-select form-select-sm" name="period" aria-label="Periodo">
+                        <option value="week" {% if selected_period == 'week' %}selected{% endif %}>Semana</option>
+                        <option value="month" {% if selected_period == 'month' %}selected{% endif %}>Mes</option>
+                        <option value="year" {% if selected_period == 'year' %}selected{% endif %}>Ano</option>
+                        <option value="custom" {% if selected_period == 'custom' %}selected{% endif %}>Rango</option>
+                    </select>
+                    <input type="date" class="form-control form-control-sm" name="start" value="{{ start_date_str }}" aria-label="Desde">
+                    <input type="date" class="form-control form-control-sm" name="end" value="{{ end_date_str }}" aria-label="Hasta">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Aplicar</button>
+                </form>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0 dashboard-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Jugador</th>
+                            <th>Delta</th>
+                            <th class="text-end">Accion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in top_evolution %}
+                        <tr>
+                            <td class="text-muted">{{ loop.index }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ row.name }}</div>
+                                <small class="text-muted">
+                                    {% if row.age is not none %}{{ row.age }} anos &middot; {% endif %}Cat. {{ row.juvenile_category or 'N/D' }} &middot; ID {{ row.id }}
+                                </small>
+                            </td>
+                            <td>
+                                <span class="badge {% if row.delta > 0 %}bg-success{% elif row.delta < 0 %}bg-danger{% else %}bg-secondary{% endif %}">
+                                    {{ row.delta }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-outline-primary btn-sm" href="{{ url_for('predict_player', player_id=row.id) }}">
+                                    Proyeccion
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No hay registros en el periodo seleccionado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-4">
+        <section class="card dashboard-chart-card h-100">
+            <div class="card-header">Posiciones</div>
+            <div class="card-body">
+                <canvas id="positionChart"></canvas>
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-4">
+        <section class="card dashboard-chart-card h-100">
+            <div class="card-header">Potencial</div>
+            <div class="card-body">
+                <canvas id="potentialChart"></canvas>
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-4">
+        <section class="card dashboard-chart-card h-100">
+            <div class="card-header">Atributos promedio</div>
+            <div class="card-body">
+                <canvas id="averageChart"></canvas>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+const compactChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' } }
+};
+
+const positionCtx = document.getElementById('positionChart');
+if (positionCtx && window.Chart) {
+    new Chart(positionCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ positions|tojson }},
+            datasets: [{
+                label: 'Jugadores',
+                data: {{ pos_values|tojson }},
+                backgroundColor: 'rgba(20, 184, 166, 0.55)',
+                borderColor: 'rgba(15, 118, 110, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            ...compactChartOptions,
+            indexAxis: 'y',
+            scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
+}
+
+const potCtx = document.getElementById('potentialChart');
+if (potCtx && window.Chart) {
+    new Chart(potCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ pot_labels|tojson }},
+            datasets: [{
+                data: {{ pot_values|tojson }},
+                backgroundColor: ['#22c55e', '#facc15', '#ef4444', '#cbd5f5']
+            }]
+        },
+        options: compactChartOptions
+    });
+}
+
+const avgCtx = document.getElementById('averageChart');
+if (avgCtx && window.Chart) {
+    new Chart(avgCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ avg_labels|tojson }},
+            datasets: [{
+                label: 'Promedio',
+                data: {{ avg_values|tojson }},
+                backgroundColor: 'rgba(37, 99, 235, 0.45)',
+                borderColor: '#2563eb',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            ...compactChartOptions,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, max: 20 } }
+        }
+    });
+}
+</script>
+{% endblock %}

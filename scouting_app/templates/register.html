@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Registrar usuario{% endblock %}
+
+{% block content %}
+<section class="profile-hero mb-4">
+    <div class="profile-hero-body">
+        <div class="profile-identity">
+            <div class="empty-state-inline" style="background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.18); color: #f8fafc;">
+                <i class="bi bi-person-plus"></i>
+            </div>
+            <div class="profile-title-stack">
+                <span class="profile-eyebrow">Usuarios</span>
+                <h1>Registrar usuario</h1>
+                <div class="profile-meta">
+                    <span class="profile-chip"><i class="bi bi-shield-lock"></i> Administradores</span>
+                    <span class="profile-chip"><i class="bi bi-key"></i> Contrasena segura</span>
+                    <span class="profile-chip"><i class="bi bi-person-gear"></i> Roles operativos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="row g-4 justify-content-center">
+    <div class="col-xl-7 col-lg-8">
+        <section class="card">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-person-lines-fill"></i> Datos de acceso
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>{{ error }}</span>
+                </div>
+                {% endif %}
+                <form method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="form-section">
+                        <div class="form-section-title">Credenciales</div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="username">Nombre de usuario</label>
+                                <input id="username" type="text" class="form-control" name="username" autocomplete="username" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="password">Contrasena</label>
+                                <input id="password" type="password" class="form-control" name="password" autocomplete="new-password" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <div class="form-section-title">Permisos</div>
+                        <label class="form-label" for="role">Rol</label>
+                        <select id="role" class="form-select" name="role" required>
+                            <option value="scout">Scout / Ojeador</option>
+                            <option value="director">Director</option>
+                            <option value="administrador">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="crud-actions mt-4">
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+                            <i class="bi bi-check2-circle"></i> Registrar
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-5 col-lg-8">
+        <section class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-shield-check"></i> Alcance de roles
+            </div>
+            <div class="card-body">
+                <div class="info-list">
+                    <div class="info-row">
+                        <span>Scout</span>
+                        <strong>Jugadores e historiales</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>Director</span>
+                        <strong>Consulta y revision</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>Administrador</span>
+                        <strong>Staff, usuarios y configuracion</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

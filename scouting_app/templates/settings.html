@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Configuracion{% endblock %}
+
+{% block content %}
+<section class="profile-hero mb-4">
+    <div class="profile-hero-body">
+        <div class="profile-identity">
+            <div class="empty-state-inline" style="background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.18); color: #f8fafc;">
+                <i class="bi bi-gear-wide-connected"></i>
+            </div>
+            <div class="profile-title-stack">
+                <span class="profile-eyebrow">Administracion</span>
+                <h1>Configuracion</h1>
+                <div class="profile-meta">
+                    <span class="profile-chip"><i class="bi bi-database-check"></i> Base operativa</span>
+                    <span class="profile-chip"><i class="bi bi-people"></i> Limite {{ eval_pool_max }}</span>
+                    <span class="profile-chip"><i class="bi bi-shield-lock"></i> Solo administradores</span>
+                </div>
+            </div>
+        </div>
+        <div class="profile-actions">
+            <div class="profile-score">
+                <div class="label">Jugadores</div>
+                <div class="value">{{ data_quality.players_total }}</div>
+                <div class="note">Base actual</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="profile-metric-grid">
+    <div class="profile-metric-card">
+        <span class="label">Sin DNI/ID</span>
+        <span class="value">{{ data_quality.missing_national_id }}</span>
+        <span class="hint">Identificacion incompleta</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Edad invalida</span>
+        <span class="value">{{ data_quality.invalid_age }}</span>
+        <span class="hint">Calculada desde nacimiento</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Sin nacimiento</span>
+        <span class="value">{{ data_quality.missing_birth_date }}</span>
+        <span class="hint">Legacy sin categoria real</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Sin foto</span>
+        <span class="value">{{ data_quality.missing_photo_url }}</span>
+        <span class="hint">Se puede completar con avatar</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Exceso limite</span>
+        <span class="value">{{ data_quality.over_limit_players }}</span>
+        <span class="hint">Maximo operativo {{ eval_pool_max }}</span>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-5">
+        <section class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-repeat"></i> Actualizar modelo y puntajes
+            </div>
+            <div class="card-body">
+                <div class="form-section">
+                    <div class="form-section-title">Pipeline operativo</div>
+                    <p class="text-muted mb-3">
+                        Ejecuta la actualizacion general de puntajes y recarga los artefactos de inferencia. La sincronizacion de jugadores operativos depende de la configuracion actual.
+                    </p>
+                    <form method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="action" value="update_database">
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+                            <i class="bi bi-play-circle"></i> Actualizar base de datos
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-7">
+        <section class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-shield-check"></i> Calidad de base operativa
+            </div>
+            <div class="card-body">
+                <div class="form-section">
+                    <div class="form-section-title">Auditoria y limpieza</div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="info-row"><span>Sin nombre</span><strong>{{ data_quality.missing_name }}</strong></div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="info-row"><span>Sin posicion</span><strong>{{ data_quality.missing_position }}</strong></div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="info-row"><span>Stats huerfanos</span><strong>{{ data_quality.orphan_stats }}</strong></div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="info-row"><span>Historial huerfano</span><strong>{{ data_quality.orphan_attribute_history }}</strong></div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="info-row"><span>Total jugadores</span><strong>{{ data_quality.players_total }}</strong></div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="info-row"><span>Sin nacimiento</span><strong>{{ data_quality.missing_birth_date }}</strong></div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="info-row"><span>Limite operativo</span><strong>{{ eval_pool_max }}</strong></div>
+                        </div>
+                    </div>
+                    <form method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="action" value="cleanup_demo_data">
+                        <button type="submit" class="btn btn-outline-primary d-flex align-items-center gap-2">
+                            <i class="bi bi-magic"></i> Auditar y limpiar base operativa
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-12">
+        <section class="card">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-terminal"></i> Logs de la ultima ejecucion
+            </div>
+            <div class="card-body">
+                {% if status_messages %}
+                <div class="small">
+                    {% for message in status_messages %}
+                    <pre class="bg-light p-3 rounded border">{{ message }}</pre>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state-inline">
+                    <i class="bi bi-info-circle"></i>
+                    <div>
+                        <strong>Sin ejecuciones recientes.</strong>
+                        <span>Cuando se ejecute una tarea, el detalle aparecera en esta seccion.</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</div>
+
+{% if modal_message %}
+<div class="modal fade record-modal" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <span class="profile-eyebrow">Resultado</span>
+          <h5 class="modal-title" id="updateModalLabel">Actualizacion de datos</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {{ modal_message }}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% if modal_message %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modalEl = document.getElementById('updateModal');
+    if (modalEl && window.bootstrap) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

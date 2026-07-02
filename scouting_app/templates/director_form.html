@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar dirigente' if director else 'Nuevo dirigente' }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+  <div class="page-heading">
+    <h1 class="mb-1">{{ 'Editar dirigente' if director else 'Nuevo dirigente' }}</h1>
+    <p class="text-muted mb-0">Carga datos basicos del referente institucional.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('list_directors') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <i class="bi bi-arrow-left"></i> Volver
+    </a>
+  </div>
+</div>
+
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="form-section">
+    <div class="form-section-title">Datos personales</div>
+    <div class="row g-3">
+      <div class="col-md-8">
+        <label class="form-label">Nombre</label>
+        <input type="text" class="form-control" name="name" value="{{ director.name if director else '' }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Edad</label>
+        <input type="number" class="form-control" name="age" value="{{ director.age if director else '' }}" min="18" max="80">
+      </div>
+    </div>
+  </div>
+  <div class="form-section">
+    <div class="form-section-title">Datos institucionales</div>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Cargo</label>
+        <input type="text" class="form-control" name="position" value="{{ director.position if director else '' }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Club</label>
+        <input type="text" class="form-control" name="club" value="{{ director.club if director else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Pais</label>
+        <input type="text" class="form-control" name="country" value="{{ director.country if director else '' }}">
+      </div>
+    </div>
+  </div>
+  <div class="mt-4 page-actions">
+    <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+      <i class="bi bi-check-lg"></i> Guardar
+    </button>
+    <a href="{{ url_for('list_directors') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <i class="bi bi-x-lg"></i> Cancelar
+    </a>
+  </div>
+</form>
+{% endblock %}

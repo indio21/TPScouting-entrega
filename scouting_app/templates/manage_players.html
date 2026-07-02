@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Gestionar jugadores{% endblock %}
+
+{% block content %}
+<section class="profile-hero mb-4">
+    <div class="profile-hero-body">
+        <div class="profile-identity">
+            <div class="profile-icon-tile" aria-hidden="true"><i class="bi bi-person-plus"></i></div>
+            <div class="profile-title-stack">
+                <span class="profile-eyebrow">Jugadores juveniles</span>
+                <h1>Gestion de jugadores</h1>
+                <div class="profile-meta">
+                    <span class="profile-chip"><i class="bi bi-calendar3"></i> 12 a 18 anos</span>
+                    <span class="profile-chip"><i class="bi bi-people"></i> {{ current_total }} cargados</span>
+                    <span class="profile-chip is-success"><i class="bi bi-database-check"></i> Cupo {{ current_total }} / {{ max_players }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-actions">
+            <div class="profile-score">
+                <div class="label">Disponibles</div>
+                <div class="value">{{ max_players - current_total }}</div>
+                <div class="note">cupos restantes</div>
+            </div>
+            <div class="profile-action-bar">
+                <a class="btn btn-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+                    <i class="bi bi-list-ul"></i> Listado
+                </a>
+                <a class="btn btn-outline-light btn-sm d-flex align-items-center gap-2" href="#alta-individual">
+                    <i class="bi bi-person-plus"></i> Alta individual
+                </a>
+                <a class="btn btn-outline-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('import_players') }}">
+                    <i class="bi bi-upload"></i> Carga masiva
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="profile-metric-grid">
+    <div class="profile-metric-card">
+        <span class="label">Cupo actual</span>
+        <span class="value">{{ current_total }} / {{ max_players }}</span>
+        <span class="hint">Limite operativo del MVP</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Alta individual</span>
+        <span class="value">1</span>
+        <span class="hint">Jugador por formulario</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Carga masiva</span>
+        <span class="value">CSV</span>
+        <span class="hint">Una fila por jugador</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Validacion</span>
+        <span class="value">12-18</span>
+        <span class="hint">Edad juvenil requerida</span>
+    </div>
+</div>
+
+<section class="card management-panel mb-4" id="alta-individual">
+    <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
+        <div>
+            <span>Alta individual</span>
+            <small class="text-muted d-block">Carga manual para un jugador nuevo.</small>
+        </div>
+        <span class="badge text-bg-light border">Formulario completo</span>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="mode" value="single">
+            <div class="form-section">
+                <div class="form-section-title">Datos personales</div>
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label" for="name">Nombre</label>
+                        <input id="name" type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="national_id">DNI / ID</label>
+                        <input id="national_id" type="text" name="national_id" class="form-control" inputmode="numeric" pattern="\d*" placeholder="Solo numeros" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label" for="birth_date">Fecha nacimiento</label>
+                        <input id="birth_date" type="date" name="birth_date" class="form-control" required>
+                        <div class="form-text">La edad y la categoria se calculan desde esta fecha.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title">Datos deportivos</div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="position">Posicion</label>
+                        <select id="position" name="position" class="form-select" required>
+                            {% for pos in position_options %}
+                            <option value="{{ pos }}">{{ display_position(pos) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="club">Club</label>
+                        <input id="club" type="text" name="club" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="country">Pais</label>
+                        <input id="country" type="text" name="country" class="form-control">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label" for="photo_url">Foto (URL opcional)</label>
+                        <input id="photo_url" type="url" name="photo_url" class="form-control"
+                               placeholder="https://... (si lo dejas vacio, se genera avatar aleatorio)">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title">Atributos tecnicos (1-20)</div>
+                <div class="row g-3">
+                    {% for field, label in attribute_sequence %}
+                    <div class="col-md-3">
+                        <label class="form-label" for="single_{{ field }}">{{ label }}</label>
+                        <input id="single_{{ field }}" type="number" name="{{ field }}" class="form-control" min="0" max="20" value="10">
+                    </div>
+                    {% endfor %}
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="potential_label_single" name="potential_label" value="1">
+                            <label class="form-check-label" for="potential_label_single">
+                                Marcar como alto potencial
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 page-actions">
+                <button type="submit" class="btn btn-success d-flex align-items-center gap-2">
+                    <i class="bi bi-check-lg"></i> Guardar jugador
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="card bulk-import-card" id="carga-masiva">
+    <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
+        <div>
+            <span>Carga masiva por plantilla</span>
+            <small class="text-muted d-block">Descarga la plantilla, completala en Excel y valida el archivo antes de guardar.</small>
+        </div>
+        <a class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" href="{{ url_for('import_players') }}">
+            <i class="bi bi-filetype-csv"></i> Importar CSV
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="bulk-guide-list mb-4">
+            <div class="bulk-guide-item">
+                <i class="bi bi-download"></i>
+                <div>
+                    <strong>Descargar plantilla</strong>
+                    <span>La tabla ya trae todos los campos esperados por la app.</span>
+                </div>
+            </div>
+            <div class="bulk-guide-item">
+                <i class="bi bi-table"></i>
+                <div>
+                    <strong>Completar en Excel</strong>
+                    <span>Sirve para cargar varios juveniles observados en practica o partido.</span>
+                </div>
+            </div>
+            <div class="bulk-guide-item">
+                <i class="bi bi-check2-square"></i>
+                <div>
+                    <strong>Previsualizar errores</strong>
+                    <span>La app muestra una tabla con filas validas, advertencias y errores.</span>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+            <small class="text-muted">La carga masiva ya no usa texto libre: se valida desde archivo CSV compatible con Excel.</small>
+            <div class="page-actions">
+                <a class="btn btn-outline-secondary d-flex align-items-center gap-2" href="{{ url_for('download_players_import_template') }}">
+                    <i class="bi bi-download"></i> Descargar plantilla
+                </a>
+                <a class="btn btn-primary d-flex align-items-center gap-2" href="{{ url_for('import_players') }}">
+                    <i class="bi bi-upload"></i> Ir a importacion
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

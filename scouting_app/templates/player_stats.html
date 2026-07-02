@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+{% block title %}Historial de {{ player.name }}{% endblock %}
+
+{% block content %}
+<section class="profile-hero mb-4">
+    <div class="profile-hero-body">
+        <div class="profile-identity">
+            {% if player.photo_url %}
+            <img src="{{ player.photo_url }}" alt="Foto {{ player.name }}" class="player-avatar-xl" loading="lazy">
+            {% else %}
+            <div class="profile-icon-tile" aria-hidden="true"><i class="bi bi-clipboard2-pulse"></i></div>
+            {% endif %}
+            <div class="profile-title-stack">
+                <span class="profile-eyebrow">Historial de rendimiento</span>
+                <h1>{{ player.name }}</h1>
+                <div class="profile-meta">
+                    <span class="profile-chip"><i class="bi bi-person-badge"></i> {{ display_position(player.position) }}</span>
+                    <span class="profile-chip"><i class="bi bi-calendar3"></i> {{ player.current_age }} anos</span>
+                    <span class="profile-chip"><i class="bi bi-calendar-event"></i> Cat. {{ player.category_year or 'N/D' }}</span>
+                    {% if player.club %}
+                    <span class="profile-chip"><i class="bi bi-shield"></i> {{ player.club }}</span>
+                    {% endif %}
+                    {% if player.country %}
+                    <span class="profile-chip"><i class="bi bi-geo-alt"></i> {{ player.country }}</span>
+                    {% endif %}
+                    <span class="profile-chip is-success"><i class="bi bi-clock-history"></i> {{ summary.entries }} registros</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-actions">
+            <div class="profile-score">
+                <div class="label">Puntaje medio</div>
+                <div class="value">{{ summary.avg_final_score or '--' }}</div>
+                <div class="note">Ultima carga: {{ summary.latest_date or 'sin registros' }}</div>
+            </div>
+            <div class="profile-action-bar">
+                <a class="btn btn-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('player_detail', player_id=player.id) }}">
+                    <i class="bi bi-eye"></i> Ficha
+                </a>
+                <a class="btn btn-outline-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('player_attributes', player_id=player.id) }}">
+                    <i class="bi bi-bar-chart"></i> Atributos
+                </a>
+                <a class="btn btn-outline-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('predict_player', player_id=player.id) }}">
+                    <i class="bi bi-graph-up"></i> Proyeccion
+                </a>
+                {% if can_edit_player_data %}
+                <button class="btn btn-warning btn-sm d-flex align-items-center gap-2" type="button"
+                        data-bs-toggle="modal" data-bs-target="#statsRecordModal">
+                    <i class="bi bi-plus-lg"></i> Nuevo registro
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="profile-metric-grid">
+    <div class="profile-metric-card">
+        <span class="label">Registros</span>
+        <span class="value">{{ summary.entries }}</span>
+        <span class="hint">Partidos/semanas observadas</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Carga total</span>
+        <span class="value">{{ summary.total_matches }}</span>
+        <span class="hint">{{ summary.total_minutes }} minutos</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Produccion</span>
+        <span class="value">{{ summary.total_goals }} / {{ summary.total_assists }}</span>
+        <span class="hint">Goles / asistencias</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Eficiencia</span>
+        <span class="value">{{ summary.avg_pass_accuracy or '--' }}%</span>
+        <span class="hint">Pases promedio</span>
+    </div>
+</div>
+
+<section class="card records-panel">
+    <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
+        <div>
+            <span>Historial completo</span>
+            <small class="text-muted d-block">Registros ordenados del mas reciente al mas antiguo.</small>
+        </div>
+        <div class="page-actions">
+            {% if can_edit_player_data %}
+            <button class="btn btn-success btn-sm d-flex align-items-center gap-2" type="button"
+                    data-bs-toggle="modal" data-bs-target="#statsRecordModal">
+                <i class="bi bi-plus-lg"></i> Nuevo registro
+            </button>
+            <form method="post" class="m-0">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action" value="recalculate">
+                <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" type="submit">
+                    <i class="bi bi-arrow-repeat"></i> Recalcular potencial
+                </button>
+            </form>
+            {% else %}
+            <span class="badge text-bg-light border">Solo lectura</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        {% if stats %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover align-middle history-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Part.</th>
+                        <th>Min.</th>
+                        <th>Goles</th>
+                        <th>Asist.</th>
+                        <th>% pases</th>
+                        <th>% disparos</th>
+                        <th>% duelos</th>
+                        <th>Puntaje</th>
+                        <th class="history-note-cell">Notas</th>
+                        {% if can_edit_player_data %}
+                        <th class="table-action-cell text-end">Acciones</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in stats %}
+                    <tr>
+                        <td>{{ stat.record_date.strftime('%Y-%m-%d') if stat.record_date else '-' }}</td>
+                        <td>{{ stat.matches_played }}</td>
+                        <td>{{ stat.minutes_played }}</td>
+                        <td>{{ stat.goals }}</td>
+                        <td>{{ stat.assists }}</td>
+                        <td>{{ stat.pass_accuracy if stat.pass_accuracy is not none else '--' }}</td>
+                        <td>{{ stat.shot_accuracy if stat.shot_accuracy is not none else '--' }}</td>
+                        <td>{{ stat.duels_won_pct if stat.duels_won_pct is not none else '--' }}</td>
+                        <td>{{ stat.final_score if stat.final_score is not none else '--' }}</td>
+                        <td class="history-note-cell">{{ stat.notes or '-' }}</td>
+                        {% if can_edit_player_data %}
+                        <td class="table-action-cell text-end">
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de registro">
+                                <button class="btn btn-outline-primary" type="button"
+                                        data-bs-toggle="modal" data-bs-target="#editStatsModal{{ stat.id }}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" type="button"
+                                        data-bs-toggle="modal" data-bs-target="#deleteStatsModal{{ stat.id }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="alert alert-light border mt-3 mb-0">
+            <div class="fw-semibold mb-1">Resumen operativo</div>
+            <div class="d-flex flex-wrap gap-3 small">
+                <span>Partidos: {{ summary.total_matches }}</span>
+                <span>Goles: {{ summary.total_goals }}</span>
+                <span>Asistencias: {{ summary.total_assists }}</span>
+                <span>Minutos: {{ summary.total_minutes }}</span>
+                <span>Puntaje promedio: {{ summary.avg_final_score or '--' }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state-inline">
+            <i class="bi bi-clipboard2-pulse"></i>
+            <div>
+                <strong>Todavia no hay registros cargados.</strong>
+                <span>{% if can_edit_player_data %}Usa Nuevo registro para iniciar el historial.{% else %}El rol director puede consultar registros cuando existan.{% endif %}</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+{% if can_edit_player_data %}
+<div class="modal fade record-modal" id="statsRecordModal" tabindex="-1" aria-labelledby="statsRecordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="post">
+                <div class="modal-header">
+                    <div>
+                        <span class="profile-eyebrow">Carga de rendimiento</span>
+                        <h2 class="h5 mb-0" id="statsRecordModalLabel">Nuevo registro</h2>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="add">
+                    <div class="form-section">
+                        <div class="form-section-title">Datos del periodo</div>
+                        <div class="mb-3">
+                            <label class="form-label" for="stats_record_date">Fecha</label>
+                            <input class="form-control" type="date" id="stats_record_date" name="record_date" value="{{ request.form.record_date or '' }}" required>
+                            <div class="form-text">Usa la fecha del partido, semana o microciclo observado.</div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label" for="stats_matches_played">Partidos</label>
+                                <input id="stats_matches_played" class="form-control" type="number" name="matches_played" min="0" value="{{ request.form.matches_played or 0 }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="stats_minutes_played">Minutos</label>
+                                <input id="stats_minutes_played" class="form-control" type="number" name="minutes_played" min="0" value="{{ request.form.minutes_played or 0 }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <div class="form-section-title">Produccion</div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label" for="stats_goals">Goles</label>
+                                <input id="stats_goals" class="form-control" type="number" name="goals" min="0" value="{{ request.form.goals or 0 }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="stats_assists">Asistencias</label>
+                                <input id="stats_assists" class="form-control" type="number" name="assists" min="0" value="{{ request.form.assists or 0 }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="stats_yellow_cards">Amarillas</label>
+                                <input id="stats_yellow_cards" class="form-control" type="number" name="yellow_cards" min="0" value="{{ request.form.yellow_cards or 0 }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="stats_red_cards">Rojas</label>
+                                <input id="stats_red_cards" class="form-control" type="number" name="red_cards" min="0" value="{{ request.form.red_cards or 0 }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <div class="form-section-title">Eficiencia y valoracion</div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="stats_pass_accuracy">% pases acertados</label>
+                                <input id="stats_pass_accuracy" class="form-control" type="number" name="pass_accuracy" min="0" max="100" step="0.1" value="{{ request.form.pass_accuracy or '' }}" placeholder="Ej: 85.4">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="stats_shot_accuracy">% disparos a puerta</label>
+                                <input id="stats_shot_accuracy" class="form-control" type="number" name="shot_accuracy" min="0" max="100" step="0.1" value="{{ request.form.shot_accuracy or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="stats_duels_won_pct">% duelos ganados</label>
+                                <input id="stats_duels_won_pct" class="form-control" type="number" name="duels_won_pct" min="0" max="100" step="0.1" value="{{ request.form.duels_won_pct or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="stats_final_score">Valoracion final (1 a 10)</label>
+                                <input id="stats_final_score" class="form-control" type="number" name="final_score" min="1" max="10" step="0.1" value="{{ request.form.final_score or '' }}" placeholder="Vacio para calcular automaticamente">
+                            </div>
+                        </div>
+                        <div class="form-text mt-2">Si la valoracion queda vacia, la app calcula un puntaje sugerido.</div>
+                    </div>
+                    <div class="form-section">
+                        <div class="form-section-title">Observaciones</div>
+                        <label class="form-label" for="stats_notes">Notas</label>
+                        <textarea id="stats_notes" class="form-control" name="notes" rows="3" placeholder="Lesion leve, buen liderazgo, se mostro ansioso...">{{ request.form.notes or '' }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-success d-flex align-items-center gap-2" type="submit">
+                        <i class="bi bi-check2-circle"></i> Guardar registro
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% for stat in stats %}
+<div class="modal fade record-modal" id="editStatsModal{{ stat.id }}" tabindex="-1" aria-labelledby="editStatsModalLabel{{ stat.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('edit_player_stat', player_id=player.id, stat_id=stat.id) }}">
+                <div class="modal-header">
+                    <div>
+                        <span class="profile-eyebrow">Editar rendimiento</span>
+                        <h2 class="h5 mb-0" id="editStatsModalLabel{{ stat.id }}">Registro {{ stat.record_date.strftime('%Y-%m-%d') if stat.record_date else '-' }}</h2>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="form-section">
+                        <div class="form-section-title">Datos del periodo</div>
+                        <div class="mb-3">
+                            <label class="form-label" for="edit_stats_record_date_{{ stat.id }}">Fecha</label>
+                            <input class="form-control" type="date" id="edit_stats_record_date_{{ stat.id }}" name="record_date" value="{{ stat.record_date.strftime('%Y-%m-%d') if stat.record_date else '' }}" required>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label" for="edit_stats_matches_played_{{ stat.id }}">Partidos</label>
+                                <input id="edit_stats_matches_played_{{ stat.id }}" class="form-control" type="number" name="matches_played" min="0" value="{{ stat.matches_played }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="edit_stats_minutes_played_{{ stat.id }}">Minutos</label>
+                                <input id="edit_stats_minutes_played_{{ stat.id }}" class="form-control" type="number" name="minutes_played" min="0" value="{{ stat.minutes_played }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <div class="form-section-title">Produccion</div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label" for="edit_stats_goals_{{ stat.id }}">Goles</label>
+                                <input id="edit_stats_goals_{{ stat.id }}" class="form-control" type="number" name="goals" min="0" value="{{ stat.goals }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="edit_stats_assists_{{ stat.id }}">Asistencias</label>
+                                <input id="edit_stats_assists_{{ stat.id }}" class="form-control" type="number" name="assists" min="0" value="{{ stat.assists }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="edit_stats_yellow_cards_{{ stat.id }}">Amarillas</label>
+                                <input id="edit_stats_yellow_cards_{{ stat.id }}" class="form-control" type="number" name="yellow_cards" min="0" value="{{ stat.yellow_cards }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="edit_stats_red_cards_{{ stat.id }}">Rojas</label>
+                                <input id="edit_stats_red_cards_{{ stat.id }}" class="form-control" type="number" name="red_cards" min="0" value="{{ stat.red_cards }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <div class="form-section-title">Eficiencia y valoracion</div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="edit_stats_pass_accuracy_{{ stat.id }}">% pases acertados</label>
+                                <input id="edit_stats_pass_accuracy_{{ stat.id }}" class="form-control" type="number" name="pass_accuracy" min="0" max="100" step="0.1" value="{{ stat.pass_accuracy if stat.pass_accuracy is not none else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="edit_stats_shot_accuracy_{{ stat.id }}">% disparos a puerta</label>
+                                <input id="edit_stats_shot_accuracy_{{ stat.id }}" class="form-control" type="number" name="shot_accuracy" min="0" max="100" step="0.1" value="{{ stat.shot_accuracy if stat.shot_accuracy is not none else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="edit_stats_duels_won_pct_{{ stat.id }}">% duelos ganados</label>
+                                <input id="edit_stats_duels_won_pct_{{ stat.id }}" class="form-control" type="number" name="duels_won_pct" min="0" max="100" step="0.1" value="{{ stat.duels_won_pct if stat.duels_won_pct is not none else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="edit_stats_final_score_{{ stat.id }}">Valoracion final (1 a 10)</label>
+                                <input id="edit_stats_final_score_{{ stat.id }}" class="form-control" type="number" name="final_score" min="1" max="10" step="0.1" value="{{ stat.final_score if stat.final_score is not none else '' }}" placeholder="Vacio para calcular automaticamente">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <div class="form-section-title">Observaciones</div>
+                        <label class="form-label" for="edit_stats_notes_{{ stat.id }}">Notas</label>
+                        <textarea id="edit_stats_notes_{{ stat.id }}" class="form-control" name="notes" rows="3">{{ stat.notes or '' }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary d-flex align-items-center gap-2" type="submit">
+                        <i class="bi bi-check2-circle"></i> Guardar cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade record-modal" id="deleteStatsModal{{ stat.id }}" tabindex="-1" aria-labelledby="deleteStatsModalLabel{{ stat.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('delete_player_stat', player_id=player.id, stat_id=stat.id) }}">
+                <div class="modal-header">
+                    <div>
+                        <span class="profile-eyebrow">Eliminar rendimiento</span>
+                        <h2 class="h5 mb-0" id="deleteStatsModalLabel{{ stat.id }}">Confirmar eliminacion</h2>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <p class="mb-2">Vas a eliminar el registro de rendimiento del <strong>{{ stat.record_date.strftime('%Y-%m-%d') if stat.record_date else '-' }}</strong>.</p>
+                    <p class="text-muted mb-0">Esta accion actualiza la proyeccion del jugador despues de guardar el cambio.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-danger d-flex align-items-center gap-2" type="submit">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="mt-4 crud-actions">
+    <a class="btn btn-secondary d-flex align-items-center gap-2" href="{{ url_for('player_detail', player_id=player.id) }}">
+        <i class="bi bi-arrow-left"></i> Volver a ficha
+    </a>
+    <a class="btn btn-outline-success d-flex align-items-center gap-2" href="{{ url_for('player_attributes', player_id=player.id) }}">
+        <i class="bi bi-bar-chart"></i> {% if can_edit_player_data %}Gestionar atributos{% else %}Ver atributos{% endif %}
+    </a>
+    <a class="btn btn-outline-primary d-flex align-items-center gap-2" href="{{ url_for('predict_player', player_id=player.id) }}">
+        <i class="bi bi-graph-up"></i> Ir a proyeccion
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% if can_edit_player_data and request.method == 'POST' and request.form.get('action') == 'add' %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const modalEl = document.getElementById('statsRecordModal');
+    if (modalEl && window.bootstrap) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

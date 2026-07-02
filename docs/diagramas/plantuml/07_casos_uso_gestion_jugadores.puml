@@ -1,0 +1,35 @@
+@startuml
+title Diagrama de casos de uso - Gestion de jugadores
+
+left to right direction
+
+actor "Responsable de carga\nAdmin / Scout" as Editor
+actor "Usuario de consulta\nAdmin / Scout / Director" as Reader
+
+rectangle "Modulo Jugadores" {
+  usecase "Listar y filtrar\njugadores" as UC01
+  usecase "Crear jugador" as UC02
+  usecase "Editar jugador" as UC03
+  usecase "Eliminar jugador" as UC04
+  usecase "Descargar plantilla CSV" as UC05
+  usecase "Importar jugadores\npor CSV" as UC06
+  usecase "Consultar ficha\nintegral" as UC07
+  usecase "Registrar atributos\nhistoricos" as UC08
+  usecase "Registrar rendimiento" as UC09
+  usecase "Registrar partidos,\nfisico, disponibilidad\ny reportes scout" as UC10
+}
+
+Editor --> UC01
+Reader --> UC01
+Editor --> UC02
+Editor --> UC03
+Editor --> UC04
+Editor --> UC05
+Editor --> UC06
+Editor --> UC07
+Reader --> UC07
+Editor --> UC08
+Editor --> UC09
+Editor --> UC10
+
+@enduml

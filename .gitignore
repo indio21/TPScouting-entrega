@@ -1,0 +1,46 @@
+﻿__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.pytest_cache/
+.coverage*
+coverage.xml
+.venv/
+venv/
+.env
+*.log
+*.docx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local database sidecars and temp artifacts
+*.sqlite3
+*.db
+*.db.*
+*.db-wal
+*.db-shm
+*.pt
+*.pth
+*.onnx
+*.joblib
+
+# Small runtime artifacts required by the Render MVP demo.
+!scouting_app/model.pt
+!scouting_app/preprocessor.joblib
+!scouting_app/probability_calibrator.joblib
+
+# Generated MVP runtime/training artifacts
+scouting_app/experiments.csv
+scouting_app/training_metadata.json
+scouting_app/training_splits.json
+
+# Docs/artifacts not part of app source
+*.zip
+_word_media/
+_smoke_tmp/
+_smoke_tmp_v2/
+docs/evidencia_word_render/
+scouting_app/temporal_training_dataframe.joblib*

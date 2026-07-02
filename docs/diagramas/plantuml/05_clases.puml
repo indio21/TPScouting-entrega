@@ -1,0 +1,203 @@
+@startuml
+title Diagrama de clases - Modelo de dominio TPScouting
+
+skinparam classAttributeIconSize 0
+
+class TimestampMixin <<mixin>> {
+  +created_at: DateTime
+  +updated_at: DateTime
+}
+
+class Player {
+  +id: Integer
+  +name: String
+  +national_id: String
+  +age: Integer
+  +birth_date: Date
+  +position: String
+  +club: String
+  +country: String
+  +photo_url: String
+  +pace: Integer
+  +shooting: Integer
+  +passing: Integer
+  +dribbling: Integer
+  +defending: Integer
+  +physical: Integer
+  +vision: Integer
+  +tackling: Integer
+  +determination: Integer
+  +technique: Integer
+  +potential_label: Boolean
+  +category_year: Integer
+  +current_age: Integer
+  +sync_age_from_birth_date()
+  +to_dict(): dict
+}
+
+class PlayerStat {
+  +id: Integer
+  +player_id: Integer
+  +record_date: Date
+  +matches_played: Integer
+  +goals: Integer
+  +assists: Integer
+  +minutes_played: Integer
+  +yellow_cards: Integer
+  +red_cards: Integer
+  +pass_accuracy: Float
+  +shot_accuracy: Float
+  +duels_won_pct: Float
+  +final_score: Float
+  +notes: Text
+  +to_dict(): dict
+}
+
+class PlayerAttributeHistory {
+  +id: Integer
+  +player_id: Integer
+  +record_date: Date
+  +pace: Integer
+  +shooting: Integer
+  +passing: Integer
+  +dribbling: Integer
+  +defending: Integer
+  +physical: Integer
+  +vision: Integer
+  +tackling: Integer
+  +determination: Integer
+  +technique: Integer
+  +notes: Text
+}
+
+class Match {
+  +id: Integer
+  +match_date: Date
+  +opponent_name: String
+  +opponent_level: Integer
+  +tournament: String
+  +competition_category: String
+  +venue: String
+  +notes: Text
+}
+
+class PlayerMatchParticipation {
+  +id: Integer
+  +player_id: Integer
+  +match_id: Integer
+  +started: Boolean
+  +position_played: String
+  +minutes_played: Integer
+  +final_score: Float
+  +goals: Integer
+  +assists: Integer
+  +pass_accuracy: Float
+  +shot_accuracy: Float
+  +duels_won_pct: Float
+  +yellow_cards: Integer
+  +red_cards: Integer
+  +role_notes: Text
+}
+
+class ScoutReport {
+  +id: Integer
+  +player_id: Integer
+  +report_date: Date
+  +decision_making: Integer
+  +tactical_reading: Integer
+  +mental_profile: Integer
+  +adaptability: Integer
+  +observed_projection_score: Float
+  +notes: Text
+}
+
+class PhysicalAssessment {
+  +id: Integer
+  +player_id: Integer
+  +assessment_date: Date
+  +height_cm: Float
+  +weight_kg: Float
+  +dominant_foot: String
+  +estimated_speed: Float
+  +endurance: Float
+  +in_growth_spurt: Boolean
+  +notes: Text
+}
+
+class PlayerAvailability {
+  +id: Integer
+  +player_id: Integer
+  +record_date: Date
+  +availability_pct: Float
+  +fatigue_pct: Float
+  +training_load_pct: Float
+  +missed_days: Integer
+  +injury_flag: Boolean
+  +notes: Text
+}
+
+class User {
+  +id: Integer
+  +username: String
+  +password_hash: String
+  +role: String
+  +to_dict(): dict
+}
+
+class Coach {
+  +id: Integer
+  +name: String
+  +role: String
+  +age: Integer
+  +club: String
+  +country: String
+  +to_dict(): dict
+}
+
+class Director {
+  +id: Integer
+  +name: String
+  +position: String
+  +age: Integer
+  +club: String
+  +country: String
+  +to_dict(): dict
+}
+
+TimestampMixin <|-- Player
+TimestampMixin <|-- PlayerStat
+TimestampMixin <|-- PlayerAttributeHistory
+TimestampMixin <|-- Match
+TimestampMixin <|-- PlayerMatchParticipation
+TimestampMixin <|-- ScoutReport
+TimestampMixin <|-- PhysicalAssessment
+TimestampMixin <|-- PlayerAvailability
+TimestampMixin <|-- User
+TimestampMixin <|-- Coach
+TimestampMixin <|-- Director
+
+Player "1" o-- "0..*" PlayerStat : stats
+Player "1" o-- "0..*" PlayerAttributeHistory : attribute_history
+Player "1" o-- "0..*" PlayerMatchParticipation : match_participations
+Player "1" o-- "0..*" ScoutReport : scout_reports
+Player "1" o-- "0..*" PhysicalAssessment : physical_assessments
+Player "1" o-- "0..*" PlayerAvailability : availability_records
+
+Match "1" o-- "0..*" PlayerMatchParticipation : participations
+
+note right of Player
+Atributos deportivos en escala 1-20.
+birth_date es la fuente para edad y categoria.
+end note
+
+note right of User
+Roles usados por la app:
+administrador, scout/ojeador y director.
+end note
+
+note bottom of PlayerAvailability
+Porcentajes operativos:
+availability_pct, fatigue_pct y training_load_pct.
+end note
+
+@enduml

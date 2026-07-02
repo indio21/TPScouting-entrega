@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+{% block title %}Atributos de {{ player.name }}{% endblock %}
+
+{% block content %}
+<section class="profile-hero mb-4">
+    <div class="profile-hero-body">
+        <div class="profile-identity">
+            {% if player.photo_url %}
+            <img src="{{ player.photo_url }}" alt="Foto {{ player.name }}" class="player-avatar-xl" loading="lazy">
+            {% else %}
+            <div class="profile-icon-tile" aria-hidden="true"><i class="bi bi-bar-chart-line"></i></div>
+            {% endif %}
+            <div class="profile-title-stack">
+                <span class="profile-eyebrow">Evolucion de atributos</span>
+                <h1>{{ player.name }}</h1>
+                <div class="profile-meta">
+                    <span class="profile-chip"><i class="bi bi-person-badge"></i> {{ display_position(player.position) }}</span>
+                    <span class="profile-chip"><i class="bi bi-calendar3"></i> {{ player.current_age }} anos</span>
+                    <span class="profile-chip"><i class="bi bi-calendar-event"></i> Cat. {{ player.category_year or 'N/D' }}</span>
+                    {% if player.club %}
+                    <span class="profile-chip"><i class="bi bi-shield"></i> {{ player.club }}</span>
+                    {% endif %}
+                    {% if player.country %}
+                    <span class="profile-chip"><i class="bi bi-geo-alt"></i> {{ player.country }}</span>
+                    {% endif %}
+                    <span class="profile-chip is-success"><i class="bi bi-clipboard-data"></i> {{ summary.entries }} registros</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-actions">
+            <div class="profile-score">
+                <div class="label">Ultima tecnica</div>
+                <div class="value">{% if summary.technique is not none %}{{ summary.technique }}{% else %}--{% endif %}</div>
+                <div class="note">Ultima carga: {{ summary.latest_date or 'sin registros' }}</div>
+            </div>
+            <div class="profile-action-bar">
+                <a class="btn btn-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('player_detail', player_id=player.id) }}">
+                    <i class="bi bi-eye"></i> Ficha
+                </a>
+                <a class="btn btn-outline-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('player_stats', player_id=player.id) }}">
+                    <i class="bi bi-clipboard2-pulse"></i> Rendimiento
+                </a>
+                <a class="btn btn-outline-light btn-sm d-flex align-items-center gap-2" href="{{ url_for('predict_player', player_id=player.id) }}">
+                    <i class="bi bi-graph-up"></i> Proyeccion
+                </a>
+                {% if can_edit_player_data %}
+                <button class="btn btn-warning btn-sm d-flex align-items-center gap-2" type="button"
+                        data-bs-toggle="modal" data-bs-target="#attributesRecordModal">
+                    <i class="bi bi-plus-lg"></i> Nuevo registro
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="profile-metric-grid">
+    <div class="profile-metric-card">
+        <span class="label">Registros</span>
+        <span class="value">{{ summary.entries }}</span>
+        <span class="hint">Evoluciones cargadas</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Ultima carga</span>
+        <span class="value">{% if summary.latest_date %}OK{% else %}--{% endif %}</span>
+        <span class="hint">{{ summary.latest_date or 'Sin registros' }}</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Vision</span>
+        <span class="value">{% if summary.vision is not none %}{{ summary.vision }}{% else %}--{% endif %}</span>
+        <span class="hint">Lectura de juego</span>
+    </div>
+    <div class="profile-metric-card">
+        <span class="label">Determinacion</span>
+        <span class="value">{% if summary.determination is not none %}{{ summary.determination }}{% else %}--{% endif %}</span>
+        <span class="hint">Perfil mental</span>
+    </div>
+</div>
+
+<div class="d-grid gap-4">
+    <section class="card records-panel">
+        <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
+            <div>
+                <span>Resumen visual</span>
+                <small class="text-muted d-block">Evolucion tecnica en escala 1-20.</small>
+            </div>
+            <div class="page-actions">
+                {% if can_edit_player_data %}
+                <button class="btn btn-success btn-sm d-flex align-items-center gap-2" type="button"
+                        data-bs-toggle="modal" data-bs-target="#attributesRecordModal">
+                    <i class="bi bi-plus-lg"></i> Nuevo registro
+                </button>
+                <form method="post" class="m-0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="recalculate">
+                    <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" type="submit">
+                        <i class="bi bi-arrow-repeat"></i> Recalcular potencial
+                    </button>
+                </form>
+                {% else %}
+                <span class="badge text-bg-light border">Solo lectura</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            {% if payload.labels %}
+            <div class="timeline-wrapper">
+                <canvas id="attributeChart" height="260"></canvas>
+            </div>
+            {% else %}
+            <div class="empty-state-inline">
+                <i class="bi bi-bar-chart-line"></i>
+                <div>
+                    <strong>Sin evolucion cargada.</strong>
+                    <span>{% if can_edit_player_data %}Usa Nuevo registro para iniciar el grafico.{% else %}El rol director puede consultar registros cuando existan.{% endif %}</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <span>Historial de atributos</span>
+            <small class="text-muted d-block">Registros ordenados del mas reciente al mas antiguo.</small>
+        </div>
+        <div class="card-body">
+            {% if history %}
+            <div class="table-responsive">
+                <table class="table table-sm table-striped table-hover align-middle history-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            {% for field, label in attribute_labels.items() %}
+                            <th>{{ label }}</th>
+                            {% endfor %}
+                            <th class="history-note-cell">Notas</th>
+                            {% if can_edit_player_data %}
+                            <th class="table-action-cell text-end">Acciones</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in history %}
+                        <tr>
+                            <td>{{ entry.record_date.strftime('%Y-%m-%d') if entry.record_date else '-' }}</td>
+                            {% for field, label in attribute_labels.items() %}
+                            <td>{{ entry|attr(field) if entry|attr(field) is not none else '--' }}</td>
+                            {% endfor %}
+                            <td class="history-note-cell">{{ entry.notes or '-' }}</td>
+                            {% if can_edit_player_data %}
+                            <td class="table-action-cell text-end">
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de atributo">
+                                    <button class="btn btn-outline-primary" type="button"
+                                            data-bs-toggle="modal" data-bs-target="#editAttributesModal{{ entry.id }}">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" type="button"
+                                            data-bs-toggle="modal" data-bs-target="#deleteAttributesModal{{ entry.id }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">Aun no se registraron cambios de atributos para este jugador.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+{% if can_edit_player_data %}
+<div class="modal fade record-modal" id="attributesRecordModal" tabindex="-1" aria-labelledby="attributesRecordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="post">
+                <div class="modal-header">
+                    <div>
+                        <span class="profile-eyebrow">Carga de atributos</span>
+                        <h2 class="h5 mb-0" id="attributesRecordModalLabel">Nuevo registro</h2>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="add">
+
+                    <div class="form-section">
+                        <div class="form-section-title">Datos de evaluacion</div>
+                        <label class="form-label" for="attributes_record_date">Fecha</label>
+                        <input type="date" class="form-control" id="attributes_record_date" name="record_date" value="{{ request.form.record_date or '' }}" required>
+                        <div class="form-text">Usa la fecha del partido, microciclo o evaluacion.</div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-section-title">Atributos 1-20</div>
+                        <div class="row g-3">
+                            {% for field, label in attribute_labels.items() %}
+                            <div class="col-6">
+                                <label class="form-label" for="attributes_{{ field }}">{{ label }}</label>
+                                <input id="attributes_{{ field }}" type="number" class="form-control" name="{{ field }}" min="1" max="20" value="{{ request.form.get(field, '') }}" placeholder="1-20">
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text mt-2">Carga solo los atributos observados. Los campos vacios no pisan la ficha actual.</div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-section-title">Observaciones</div>
+                        <label class="form-label" for="attributes_notes">Notas</label>
+                        <textarea id="attributes_notes" class="form-control" name="notes" rows="3" placeholder="Ej: mejoro velocidad, trabajar toma de decisiones bajo presion.">{{ request.form.notes or '' }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-success d-flex align-items-center gap-2" type="submit">
+                        <i class="bi bi-check2-circle"></i> Guardar registro
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% for entry in history %}
+<div class="modal fade record-modal" id="editAttributesModal{{ entry.id }}" tabindex="-1" aria-labelledby="editAttributesModalLabel{{ entry.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('edit_player_attribute_history', player_id=player.id, history_id=entry.id) }}">
+                <div class="modal-header">
+                    <div>
+                        <span class="profile-eyebrow">Editar atributos</span>
+                        <h2 class="h5 mb-0" id="editAttributesModalLabel{{ entry.id }}">Registro {{ entry.record_date.strftime('%Y-%m-%d') if entry.record_date else '-' }}</h2>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="form-section">
+                        <div class="form-section-title">Datos de evaluacion</div>
+                        <label class="form-label" for="edit_attributes_record_date_{{ entry.id }}">Fecha</label>
+                        <input type="date" class="form-control" id="edit_attributes_record_date_{{ entry.id }}" name="record_date" value="{{ entry.record_date.strftime('%Y-%m-%d') if entry.record_date else '' }}" required>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-section-title">Atributos 1-20</div>
+                        <div class="row g-3">
+                            {% for field, label in attribute_labels.items() %}
+                            <div class="col-6">
+                                <label class="form-label" for="edit_attributes_{{ field }}_{{ entry.id }}">{{ label }}</label>
+                                <input id="edit_attributes_{{ field }}_{{ entry.id }}" type="number" class="form-control" name="{{ field }}" min="1" max="20" value="{{ entry|attr(field) if entry|attr(field) is not none else '' }}" placeholder="1-20">
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text mt-2">Debe quedar al menos un atributo cargado para conservar el registro.</div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-section-title">Observaciones</div>
+                        <label class="form-label" for="edit_attributes_notes_{{ entry.id }}">Notas</label>
+                        <textarea id="edit_attributes_notes_{{ entry.id }}" class="form-control" name="notes" rows="3">{{ entry.notes or '' }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary d-flex align-items-center gap-2" type="submit">
+                        <i class="bi bi-check2-circle"></i> Guardar cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade record-modal" id="deleteAttributesModal{{ entry.id }}" tabindex="-1" aria-labelledby="deleteAttributesModalLabel{{ entry.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('delete_player_attribute_history', player_id=player.id, history_id=entry.id) }}">
+                <div class="modal-header">
+                    <div>
+                        <span class="profile-eyebrow">Eliminar atributos</span>
+                        <h2 class="h5 mb-0" id="deleteAttributesModalLabel{{ entry.id }}">Confirmar eliminacion</h2>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <p class="mb-2">Vas a eliminar el historial de atributos del <strong>{{ entry.record_date.strftime('%Y-%m-%d') if entry.record_date else '-' }}</strong>.</p>
+                    <p class="text-muted mb-0">La ficha tecnica del jugador se resincroniza con el historial restante.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-danger d-flex align-items-center gap-2" type="submit">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="mt-4 crud-actions">
+    <a class="btn btn-secondary d-flex align-items-center gap-2" href="{{ url_for('player_detail', player_id=player.id) }}">
+        <i class="bi bi-arrow-left"></i> Volver a ficha
+    </a>
+    <a class="btn btn-outline-primary d-flex align-items-center gap-2" href="{{ url_for('player_stats', player_id=player.id) }}">
+        <i class="bi bi-clipboard2-pulse"></i> {% if can_edit_player_data %}Historial de rendimiento{% else %}Ver rendimiento{% endif %}
+    </a>
+    <a class="btn btn-outline-success d-flex align-items-center gap-2" href="{{ url_for('predict_player', player_id=player.id) }}">
+        <i class="bi bi-graph-up"></i> Abrir proyeccion
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% if payload.labels %}
+<script>
+const attributeCtx = document.getElementById('attributeChart');
+if (attributeCtx && window.Chart) {
+    const attributeData = {{ payload | tojson }};
+    const colors = {
+        pace: 'rgba(37, 99, 235, 1)',
+        shooting: 'rgba(249, 115, 22, 1)',
+        passing: 'rgba(22, 163, 74, 1)',
+        dribbling: 'rgba(20, 184, 166, 1)',
+        defending: 'rgba(139, 92, 246, 1)',
+        physical: 'rgba(250, 204, 21, 1)',
+        vision: 'rgba(14, 165, 233, 1)',
+        tackling: 'rgba(251, 113, 133, 1)',
+        determination: 'rgba(168, 85, 247, 1)',
+        technique: 'rgba(8, 145, 178, 1)'
+    };
+
+    const datasets = [];
+    Object.entries(attributeData.series).forEach(([key, values]) => {
+        if (values.some(v => v !== null)) {
+            const color = colors[key] || 'rgba(51, 65, 85, 1)';
+            datasets.push({
+                label: {{ attribute_labels | tojson }}[key] || key,
+                data: values,
+                borderColor: color,
+                backgroundColor: color.replace('1)', '0.15)'),
+                tension: 0.2,
+                spanGaps: true
+            });
+        }
+    });
+
+    new Chart(attributeCtx, {
+        type: 'line',
+        data: {
+            labels: attributeData.labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: { suggestedMin: 1, suggestedMax: 20 }
+            },
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
+</script>
+{% endif %}
+{% if can_edit_player_data and request.method == 'POST' and request.form.get('action') == 'add' %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const modalEl = document.getElementById('attributesRecordModal');
+    if (modalEl && window.bootstrap) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

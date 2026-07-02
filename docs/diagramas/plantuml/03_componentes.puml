@@ -1,0 +1,97 @@
+@startuml
+title Diagrama de componentes - Arquitectura logica TPScouting
+
+skinparam componentStyle rectangle
+
+actor "Usuario\nScout / Director / Admin" as User
+
+package "Cliente" {
+  [Navegador Web] as Browser
+  [Bootstrap CSS] as Bootstrap
+  [Chart.js] as ChartJS
+}
+
+package "Aplicacion Flask" {
+  [app.py\nInicializacion y configuracion] as App
+  [Jinja2 Templates] as Templates
+
+  package "Blueprints / Rutas" {
+    [auth.py\nLogin / Logout / Registro] as Auth
+    [players.py\nJugadores, ficha, atributos,\nestadisticas, prediccion] as Players
+    [dashboard.py\nPanel general] as Dashboard
+    [compare.py\nComparadores] as Compare
+    [staff.py\nStaff] as Staff
+    [settings.py\nConfiguracion] as Settings
+  }
+
+  package "Servicios" {
+    [services/cache.py\nCache in-memory] as Cache
+    [db_utils.py\nConexion y migraciones livianas] as DBUtils
+    [sync_shortlist.py\nSincronizacion de datos] as Sync
+  }
+
+  package "Modulo ML" {
+    [ml/runtime.py\nCarga e inferencia] as Runtime
+    [preprocessing.py\nTransformacion de features] as Preprocessing
+    [train_model.py\nEntrenamiento PlayerNet] as Train
+    [PlayerNet\nPyTorch] as PlayerNet
+  }
+}
+
+package "Persistencia" {
+  database "SQLite\nDesarrollo local" as SQLite
+  database "PostgreSQL\nRender demo" as PostgreSQL
+}
+
+package "Artefactos ML" {
+  artifact "model.pt" as ModelPT
+  artifact "preprocessor.joblib" as Preprocessor
+  artifact "probability_calibrator.joblib" as Calibrator
+  artifact "training_metadata.json" as Metadata
+}
+
+User --> Browser
+Browser --> App
+Browser ..> Bootstrap
+Browser ..> ChartJS
+
+App --> Templates
+App --> Auth
+App --> Players
+App --> Dashboard
+App --> Compare
+App --> Staff
+App --> Settings
+
+Players --> Runtime
+Dashboard --> Runtime
+Compare --> Runtime
+
+Runtime --> PlayerNet
+Runtime --> Preprocessing
+Runtime --> ModelPT
+Runtime --> Preprocessor
+Runtime --> Calibrator
+Train --> Metadata
+
+Auth --> DBUtils
+Players --> DBUtils
+Dashboard --> DBUtils
+Compare --> DBUtils
+Staff --> DBUtils
+Settings --> DBUtils
+Sync --> DBUtils
+
+DBUtils --> SQLite : local
+DBUtils --> PostgreSQL : Render
+
+Cache ..> Dashboard
+Cache ..> Compare
+Cache ..> Players
+
+note right of PostgreSQL
+En despliegue Render se usa PostgreSQL.
+SQLite queda para desarrollo local.
+end note
+
+@enduml
