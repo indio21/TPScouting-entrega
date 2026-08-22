@@ -2,8 +2,9 @@
 
 ## 1. Instalar dependencias
 
+Desde la raíz del repositorio clonado:
+
 ```powershell
-cd C:\Tesis\TPScouting-entrega
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
@@ -44,8 +45,9 @@ http://127.0.0.1:5000/
 
 ## 5. Ejecutar tests
 
+Desde la raíz del repositorio clonado:
+
 ```powershell
-cd C:\Tesis\TPScouting-entrega
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 

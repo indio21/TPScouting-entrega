@@ -15,8 +15,9 @@ Guia corta de operacion para la entrega del MVP.
 
 ## Arranque local minimo
 
+Desde la raíz del repositorio clonado:
+
 ```powershell
-cd C:\Tesis\TPScouting-entrega
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 
