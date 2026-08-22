@@ -1,5 +1,7 @@
 # TPScouting Entrega
 
+[![CI](https://github.com/indio21/TPScouting-entrega/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/indio21/TPScouting-entrega/actions/workflows/ci.yml)
+
 Repositorio limpio de entrega del MVP TPScouting.
 
 TPScouting es una aplicacion web Flask para registrar jugadores juveniles, cargar historiales, comparar perfiles y estimar potencial con un modelo PyTorch. El alcance del MVP esta acotado a scouting juvenil de 12 a 18 anos para clubes formativos.
@@ -67,6 +69,8 @@ Abrir `http://127.0.0.1:5000/`.
 
 ## Tests
 
+Estado verificado al 21/08/2026: `84 passed, 1 skipped, 4 warnings`, con `80%` de cobertura (`5.083` sentencias; `1.032` no cubiertas). La CI ejecuta la suite en Python 3.11 y 3.12 y publica los artefactos de cobertura.
+
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 ```
@@ -114,6 +118,8 @@ $env:SMOKE_USERNAME = "usuario"
 $env:SMOKE_PASSWORD = "clave"
 .\.venv\Scripts\python.exe .\scripts\smoke_render.py
 ```
+
+La evidencia publica de Render es historica. La disponibilidad actual del servicio no es necesaria para ejecutar o evaluar localmente esta entrega.
 
 ## Alcance
 
