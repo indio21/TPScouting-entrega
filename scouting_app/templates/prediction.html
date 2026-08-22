@@ -80,7 +80,7 @@
                     <small class="text-muted">Modelo base sobre atributos actuales.</small>
                 </div>
                 <div class="decision-card">
-                    <span class="label">Ajuste historial</span>
+                    <span class="label">Ajuste combinado</span>
                     <span class="value">
                         {% if probability_delta > 0 %}
                         +{{ probability_delta|round(1) }} pts
@@ -90,7 +90,7 @@
                         0 pts
                         {% endif %}
                     </span>
-                    <small class="text-muted">Impacto de datos recientes.</small>
+                    <small class="text-muted">Impacto de historial y ajuste posicional.</small>
                 </div>
                 <div class="decision-card">
                     <span class="label">Puesto recomendado</span>

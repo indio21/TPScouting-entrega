@@ -29,8 +29,8 @@ class Player {
   +determination: Integer
   +technique: Integer
   +potential_label: Boolean
-  +category_year: Integer
-  +current_age: Integer
+  +category_year: Integer {derived}
+  +current_age: Integer {derived}
   +sync_age_from_birth_date()
   +to_dict(): dict
 }

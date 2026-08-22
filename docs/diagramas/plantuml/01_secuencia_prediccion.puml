@@ -1,5 +1,5 @@
 @startuml
-title Diagrama de secuencia - Prediccion de potencial de jugador
+title Diagrama de secuencia - Inferencia y score combinado de potencial
 
 actor "Usuario autenticado\nScout / Admin / Director" as Usuario
 participant "Navegador\nBootstrap + Jinja2" as Browser
@@ -10,6 +10,7 @@ participant "Preprocesamiento\npreprocessing.py\npreprocessor.joblib" as Prep
 participant "Runtime ML\nml/runtime.py" as Runtime
 participant "Modelo PyTorch\nPlayerNet en memoria" as Model
 participant "Calibrador\nprobability_calibrator.joblib" as Calibrator
+participant "Logica operativa\ncombine_probability" as Logic
 participant "Template Jinja2\nprediction.html" as View
 
 Usuario -> Browser: Abre la proyeccion del jugador
@@ -20,24 +21,34 @@ ORM -> DB: SELECT jugador, atributos, estadisticas y reportes
 DB --> ORM: Datos persistidos
 ORM --> Flask: Objeto Player y datos relacionados
 
-alt Jugador encontrado y modelo cargado
+alt Modelo no disponible
+    Flask --> Browser: 500 Internal Server Error
+    Browser --> Usuario: Informa que el calculo no esta disponible
+else Modelo cargado y datos suficientes
     Flask -> Prep: Construir features del jugador
     Prep --> Flask: Vector transformado\ninput_dim=68
     Flask -> Runtime: Solicitar inferencia de potencial
     Runtime -> Model: forward(vector)
-    Model --> Runtime: Logit / probabilidad base
-    Runtime -> Calibrator: Ajustar probabilidad si existe calibrador
-    Calibrator --> Runtime: Probabilidad calibrada
-    Runtime --> Flask: Potencial estimado y categoria\nBajo / Medio / Alto
-    Flask -> View: render_template(prediction.html)
+    Model --> Runtime: Logit
+    Runtime -> Runtime: sigmoid(logit)
+    Runtime --> Flask: base_prob cruda
+    opt Calibrador disponible
+        Runtime -> Calibrator: Transformar base_prob
+        Calibrator --> Runtime: Probabilidad calibrada secundaria
+        Runtime --> Flask: Referencia calibrada
+    end
+    Flask -> Logic: combine_probability(base_prob,\nstats_summary, fit_score)
+    Logic --> Flask: combined_prob principal
+    Flask -> Flask: Clasificar bajo / medio / alto\numbrales 0.60 / 0.80
+    Flask -> View: render_template(prediction.html,\nscore combinado y referencia secundaria)
     View --> Flask: HTML renderizado
     Flask --> Browser: 200 OK
-    Browser --> Usuario: Muestra datos, potencial y decision scout
-else Modelo no disponible o datos insuficientes
+    Browser --> Usuario: Muestra combined_prob y apoyo a decision scout
+else Modelo cargado pero datos insuficientes
     Flask -> View: Renderizar vista con advertencia controlada
     View --> Flask: HTML con mensaje de limitacion
     Flask --> Browser: 200 OK
-    Browser --> Usuario: Informa que no se pudo calcular la prediccion
+    Browser --> Usuario: Informa que faltan datos para proyectar
 end
 
 @enduml

@@ -1065,6 +1065,20 @@ def test_predict_player_without_loaded_model_returns_controlled_error(client, ap
     assert "No hay calculo disponible todavia" in response.get_data(as_text=True)
 
 
+def test_predict_player_renders_current_age_and_combined_adjustment(client, app_module, db):
+    _create_user(db, app_module.User, "scout_prediction_view", "scout1234", role="scout")
+    player = _create_player(app_module, db, name="Edad Visible", national_id="44455668")
+    _login(client, "scout_prediction_view", "scout1234")
+
+    response = client.get(f"/player/{player.id}/predict")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert f"{player.current_age} anos" in html
+    assert "Ajuste combinado" in html
+    assert "Impacto de historial y ajuste posicional." in html
+
+
 def test_player_stats_reject_invalid_percentages(client, app_module, db):
     _create_user(db, app_module.User, "scout_stats", "scout1234", role="scout")
     player = _create_player(app_module, db, name="Stats Base", national_id="44455667")

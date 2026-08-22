@@ -6,7 +6,7 @@ node "Usuario" {
 }
 
 cloud "Render" {
-  node "Web Service\nservicio Render publicado" as RenderWeb {
+  node "Web Service\nhttps://tpscouting-mvp.onrender.com" as RenderWeb {
     node "Gunicorn\n--workers 1 --threads 2" as Gunicorn {
       node "Flask App\nTPScouting" as FlaskApp {
         artifact "app.py" as AppPy
@@ -38,7 +38,7 @@ FlaskApp --> ModelPT : carga modelo
 FlaskApp --> Preprocessor : carga preprocesador
 FlaskApp --> Calibrator : carga calibrador
 
-GitHub --> RenderWeb : Deploy desde rama main
+GitHub --> RenderWeb : Deploy desde la rama\nconfigurada en Render
 
 note right of RenderDB
 En produccion/demo no se usa SQLite
@@ -48,7 +48,15 @@ end note
 note bottom of Gunicorn
 Configuracion documentada para MVP:
 1 worker + 2 threads.
-Los locks/cache son in-memory.
+Cache y rate limit en memoria.
+Lock del pipeline: thread + archivo atomico.
+No reemplaza coordinacion distribuida multi-instancia.
+end note
+
+note top of GitHub
+Evidencia historica del 20/05/2026:
+rama render-free-deploy.
+La rama conectada actualmente no fue verificada.
 end note
 
 @enduml

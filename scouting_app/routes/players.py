@@ -1452,6 +1452,7 @@ def create_players_blueprint(*, deps: SimpleNamespace) -> Blueprint:
         else:
             projection = deps.compute_projection(player, db_session=db)
         player_view = SimpleNamespace(**player.to_dict())
+        player_view.current_age = player.current_age
         player_view.photo_url = player.photo_url or deps.default_player_photo_url(
             name=player.name,
             national_id=player.national_id,
