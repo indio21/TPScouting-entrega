@@ -72,7 +72,12 @@ def trim_operational_player_pool(db_session: SQLAlchemySession, max_players: int
 def backfill_player_photo_urls(db_session: SQLAlchemySession) -> int:
     players = (
         db_session.query(Player)
-        .filter((Player.photo_url == None) | (Player.photo_url == ""))  # noqa: E711
+        .filter(
+            (Player.photo_url == None)  # noqa: E711
+            | (Player.photo_url == "")
+            | Player.photo_url.like("%api.dicebear.com%")
+            | Player.photo_url.like("/static/img/players/%")
+        )
         .all()
     )
     updated = 0

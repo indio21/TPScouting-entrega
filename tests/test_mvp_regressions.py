@@ -60,6 +60,25 @@ def _create_player(app_module, db, **overrides):
     return player
 
 
+def test_default_player_photo_url_uses_local_silhouette(app_module):
+    assert app_module.default_player_photo_url(name="Jugador Sin Foto") == "/static/img/player-silhouette.svg"
+
+
+def test_photo_backfill_replaces_legacy_dicebear_avatar(app_module, db):
+    player = _create_player(
+        app_module,
+        db,
+        national_id="30123457",
+        photo_url="https://api.dicebear.com/9.x/adventurer/svg?seed=legacy",
+    )
+
+    assert app_module.backfill_player_photo_urls(db) == 1
+    db.commit()
+    db.refresh(player)
+
+    assert player.photo_url == "/static/img/player-silhouette.svg"
+
+
 def _valid_manage_player_payload(**overrides):
     payload = {
         "mode": "single",

@@ -89,6 +89,10 @@ $env:RUN_PLAYWRIGHT = "1"
 Remove-Item Env:\RUN_PLAYWRIGHT
 ```
 
+## Imagen de jugador
+
+Los jugadores sin una foto manual utilizan la silueta local `scouting_app/static/img/player-silhouette.svg`. La aplicación también reemplaza los avatares DiceBear heredados por este recurso local, por lo que no depende de un servicio externo para mostrar el listado, la ficha o la proyección.
+
 ## Modelo ML
 
 La app incluye tres artefactos pequenos para inferencia de demo:

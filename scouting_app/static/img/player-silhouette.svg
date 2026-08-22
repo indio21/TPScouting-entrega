@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title description">
+  <title id="title">Silueta genérica de jugador</title>
+  <desc id="description">Silueta negra de cabeza y torso sobre un fondo gris claro.</desc>
+  <rect width="256" height="256" fill="#e5e7eb"/>
+  <circle cx="128" cy="78" r="46" fill="#111827"/>
+  <path d="M39 256v-19c0-55 39-96 89-96s89 41 89 96v19H39z" fill="#111827"/>
+</svg>

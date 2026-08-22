@@ -6,9 +6,7 @@ la aplicacion Flask y los scripts de entrenamiento/sincronizacion.
 
 from __future__ import annotations
 
-import re
 from typing import Dict, List, Optional, Tuple
-from urllib.parse import quote
 
 ATTRIBUTE_FIELDS: List[str] = [
     "pace",
@@ -188,18 +186,10 @@ def is_valid_eval_age(age: int) -> bool:
     return EVAL_MIN_AGE <= age <= EVAL_MAX_AGE
 
 
-def _sanitize_photo_seed(value: Optional[str]) -> str:
-    text = (value or "").strip().lower()
-    text = re.sub(r"[^a-z0-9]+", "-", text)
-    text = re.sub(r"-{2,}", "-", text).strip("-")
-    return text or "player"
-
-
 def default_player_photo_url(
     name: Optional[str] = None,
     national_id: Optional[str] = None,
     fallback: Optional[str] = None,
 ) -> str:
-    """Retorna una URL de avatar deterministica para el jugador."""
-    seed = _sanitize_photo_seed(national_id or name or fallback)
-    return f"https://api.dicebear.com/9.x/adventurer/svg?seed={quote(seed)}"
+    """Retorna la silueta local usada cuando el jugador no tiene foto."""
+    return "/static/img/player-silhouette.svg"
