@@ -28,10 +28,9 @@ No se versionan bases de datos locales, documentos Word, notas internas ni backu
 
 ## Ejecucion local
 
-Desde PowerShell:
+Desde PowerShell, ubicarse en la raíz del repositorio clonado y ejecutar:
 
 ```powershell
-cd C:\Tesis\TPScouting-entrega
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
