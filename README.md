@@ -27,7 +27,6 @@ Los datos son ficticios y reproducibles con semilla `42`; no representan futboli
 
 - `scouting_app/`: aplicacion Flask, modelos SQLAlchemy, templates, estilos, pipeline ML y scripts operativos.
 - `tests/`: suite automatizada de regresion, seguridad basica, paginas y smoke visual opt-in.
-- `docs/diagramas/`: diagramas tecnicos PlantUML y exportaciones PNG/SVG.
 - `scripts/smoke_render.py`: smoke HTTP para validar un despliegue publicado.
 - `scripts/iniciar_demo.py`: preparacion y arranque portable de la demo local con 60 jugadores.
 - `GUIA_DEMO_PROFESOR.md`: instrucciones de evaluacion rapida y alcance de los datos sinteticos.
