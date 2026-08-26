@@ -1729,4 +1729,4 @@ def handle_500(e):
     app.logger.exception("500 Internal Server Error - path=%s user_id=%s role=%s", request.path, session.get("user_id"), session.get("role"))
     return render_template("error.html", code=500, message="Error interno del servidor"), 500
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=env_flag("FLASK_DEBUG"))
