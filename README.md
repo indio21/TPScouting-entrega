@@ -6,16 +6,35 @@ Repositorio limpio de entrega del MVP TPScouting.
 
 TPScouting es una aplicacion web Flask para registrar jugadores juveniles, cargar historiales, comparar perfiles y estimar potencial con un modelo PyTorch. El alcance del MVP esta acotado a scouting juvenil de 12 a 18 anos para clubes formativos.
 
+## Evaluacion rapida para el profesor
+
+Despues de instalar las dependencias, un solo comando genera `60` jugadores sinteticos, verifica edad/nacimiento/categoria, crea el acceso local e inicia la aplicacion:
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\iniciar_demo.py
+```
+
+Abrir `http://127.0.0.1:5000/` e ingresar con:
+
+```text
+Usuario: profesor_demo
+Contrasena: DemoProfesor123
+```
+
+Los datos son ficticios y reproducibles con semilla `42`; no representan futbolistas reales. La base se crea localmente, permite probar altas, ediciones y bajas, y no modifica archivos versionados. Las instrucciones para Windows, Linux/macOS y reinicio de la demo estan en [GUIA_DEMO_PROFESOR.md](GUIA_DEMO_PROFESOR.md).
+
 ## Contenido del repositorio
 
 - `scouting_app/`: aplicacion Flask, modelos SQLAlchemy, templates, estilos, pipeline ML y scripts operativos.
 - `tests/`: suite automatizada de regresion, seguridad basica, paginas y smoke visual opt-in.
 - `docs/diagramas/`: diagramas tecnicos PlantUML y exportaciones PNG/SVG.
 - `scripts/smoke_render.py`: smoke HTTP para validar un despliegue publicado.
+- `scripts/iniciar_demo.py`: preparacion y arranque portable de la demo local con 60 jugadores.
+- `GUIA_DEMO_PROFESOR.md`: instrucciones de evaluacion rapida y alcance de los datos sinteticos.
 - `render.yaml`: blueprint de despliegue en Render con PostgreSQL administrado.
 - `requirements.txt`, `requirements-dev.txt` y `requirements-lock.txt`: dependencias.
 
-No se versionan bases de datos locales, documentos Word, notas internas ni backups. La demo puede generar datos sinteticos con `seed_demo_data.py`.
+No se versionan bases de datos locales, documentos Word, notas internas ni backups. La demo genera localmente los datos sinteticos necesarios.
 
 ## Stack
 
@@ -26,7 +45,7 @@ No se versionan bases de datos locales, documentos Word, notas internas ni backu
 - Bootstrap + Chart.js
 - pytest + GitHub Actions
 
-## Ejecucion local
+## Instalacion manual
 
 Desde PowerShell, ubicarse en la raíz del repositorio clonado y ejecutar:
 
@@ -37,10 +56,13 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 ```
 
+El comando recomendado es `scripts/iniciar_demo.py`. Como alternativa, los pasos manuales son los siguientes.
+
 Crear datos demo locales si la base esta vacia:
 
 ```powershell
 $env:DEMO_SEED_ON_STARTUP = "1"
+$env:DEMO_SEED_PLAYERS = "60"
 $env:APP_DB_URL = "sqlite:///players_updated_v2.db"
 .\.venv\Scripts\python.exe .\scouting_app\seed_demo_data.py
 ```
@@ -68,7 +90,7 @@ Abrir `http://127.0.0.1:5000/`.
 
 ## Tests
 
-Estado verificado al 21/08/2026: `84 passed, 1 skipped, 4 warnings`, con `80%` de cobertura (`5.083` sentencias; `1.032` no cubiertas). La CI ejecuta la suite en Python 3.11 y 3.12 y publica los artefactos de cobertura.
+Estado verificado al 26/08/2026: `87 passed, 1 skipped, 4 warnings`. La CI ejecuta la suite en Python 3.11 y 3.12 y publica los artefactos de cobertura.
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q

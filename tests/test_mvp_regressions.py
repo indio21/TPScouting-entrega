@@ -2,6 +2,8 @@ import importlib
 import io
 import json
 import logging
+import sqlite3
+import subprocess
 import sys
 from datetime import date
 from types import SimpleNamespace
@@ -11,6 +13,62 @@ import pytest
 from sqlalchemy import inspect, text
 from werkzeug.security import generate_password_hash
 from sqlalchemy.orm import sessionmaker
+
+
+def test_professor_demo_script_creates_portable_verified_dataset(tmp_path, scouting_app_dir):
+    repo_root = scouting_app_dir.parent
+    script_path = repo_root / "scripts" / "iniciar_demo.py"
+    db_path = tmp_path / "professor_demo.db"
+    command = [
+        sys.executable,
+        str(script_path),
+        "--players",
+        "60",
+        "--db-path",
+        str(db_path),
+        "--solo-preparar",
+    ]
+
+    first_run = subprocess.run(command, cwd=repo_root, capture_output=True, text=True, check=False)
+    assert first_run.returncode == 0, first_run.stdout + first_run.stderr
+    assert "Jugadores disponibles: 60" in first_run.stdout
+
+    with sqlite3.connect(db_path) as connection:
+        total, missing_birth_date, min_age, max_age = connection.execute(
+            """
+            SELECT COUNT(*),
+                   SUM(CASE WHEN birth_date IS NULL THEN 1 ELSE 0 END),
+                   MIN(age),
+                   MAX(age)
+            FROM players
+            """
+        ).fetchone()
+        admin_count = connection.execute(
+            "SELECT COUNT(*) FROM users WHERE username = ? AND role = ?",
+            ("profesor_demo", "administrador"),
+        ).fetchone()[0]
+        related_counts = [
+            connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            for table in (
+                "player_stats",
+                "player_attribute_history",
+                "player_match_participations",
+                "scout_reports",
+                "physical_assessments",
+                "player_availability",
+            )
+        ]
+
+    assert total == 60
+    assert missing_birth_date == 0
+    assert 12 <= min_age <= max_age <= 18
+    assert admin_count == 1
+    assert all(count > 0 for count in related_counts)
+
+    second_run = subprocess.run(command, cwd=repo_root, capture_output=True, text=True, check=False)
+    assert second_run.returncode == 0, second_run.stdout + second_run.stderr
+    with sqlite3.connect(db_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM players").fetchone()[0] == 60
 
 
 def _create_user(db, User, username, password, role="scout"):

@@ -15,6 +15,20 @@ Guia corta de operacion para la entrega del MVP.
 
 ## Arranque local minimo
 
+Para una evaluacion local completa con 60 jugadores sinteticos, usar el comando portable documentado en `GUIA_DEMO_PROFESOR.md`:
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\iniciar_demo.py
+```
+
+El flujo conserva los cambios realizados en `scouting_app/demo_profesor.db`. Para reconstruir exclusivamente esa base:
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\iniciar_demo.py --recrear
+```
+
+Los pasos operativos equivalentes son:
+
 Desde la raíz del repositorio clonado:
 
 ```powershell
@@ -22,6 +36,7 @@ Desde la raíz del repositorio clonado:
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 
 $env:DEMO_SEED_ON_STARTUP = "1"
+$env:DEMO_SEED_PLAYERS = "60"
 $env:APP_DB_URL = "sqlite:///players_updated_v2.db"
 .\.venv\Scripts\python.exe .\scouting_app\seed_demo_data.py
 
