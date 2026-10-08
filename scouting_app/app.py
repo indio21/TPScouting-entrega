@@ -8,7 +8,7 @@ from typing import Any, List, Tuple, Callable, Optional, Dict
 from datetime import datetime, date, timedelta
 from statistics import mean
 from types import SimpleNamespace
-from flask import Flask, render_template, redirect, url_for, request, session, flash, abort, jsonify
+from flask import Flask, render_template, redirect, url_for, request, session, flash, abort, jsonify, g
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session as SQLAlchemySession, sessionmaker, load_only
 import numpy as np
@@ -67,6 +67,7 @@ from player_logic import (
     is_valid_attribute,
     is_valid_eval_age,
     default_player_photo_url,
+    is_valid_player_photo_url,
 )
 from services.cache import TTLCache
 from services.locks import PipelineFileLock
@@ -83,6 +84,7 @@ from services.security import (
     client_ip_from_request,
     csrf_token as service_csrf_token,
     require_csrf as service_require_csrf,
+    safe_internal_redirect_target,
 )
 from routes import register_legacy_endpoint_aliases
 from routes.auth import create_auth_blueprint
@@ -98,7 +100,18 @@ app = Flask(__name__)
 
 # Límite de payload para requests (mitiga abusos y errores por uploads grandes)
 # Default: 2MB. Ajustable por env var `MAX_CONTENT_LENGTH`.
-app.config["MAX_CONTENT_LENGTH"] = int(os.environ.get("MAX_CONTENT_LENGTH", str(2 * 1024 * 1024)))
+def env_int(name: str, default: int, *, minimum: Optional[int] = None) -> int:
+    """Lee un entero de entorno y aplica un mínimo sin repetir try/except."""
+    raw_value = os.environ.get(name)
+    try:
+        value = int(raw_value) if raw_value is not None else int(default)
+    except (TypeError, ValueError):
+        app.logger.warning("Valor inválido para %s=%r; se usa %s", name, raw_value, default)
+        value = int(default)
+    return max(minimum, value) if minimum is not None else value
+
+
+app.config["MAX_CONTENT_LENGTH"] = env_int("MAX_CONTENT_LENGTH", 2 * 1024 * 1024, minimum=1)
 
 
 # --- Observabilidad mínima ---
@@ -151,24 +164,12 @@ DEFAULT_SUGGESTION_COUNT = 3
 SCORE_BAND_HIGH_THRESHOLD = 15
 SCORE_BAND_MEDIUM_THRESHOLD = 10
 
-try:
-    _CACHE_TTL_SECONDS = max(1, int(os.environ.get("CACHE_TTL_SECONDS", str(DEFAULT_CACHE_TTL_SECONDS))))
-except ValueError:
-    _CACHE_TTL_SECONDS = DEFAULT_CACHE_TTL_SECONDS
-try:
-    _CACHE_MAX_ENTRIES = max(1, int(os.environ.get("CACHE_MAX_ENTRIES", str(DEFAULT_CACHE_MAX_ENTRIES))))
-except ValueError:
-    _CACHE_MAX_ENTRIES = DEFAULT_CACHE_MAX_ENTRIES
-try:
-    PLAYER_LIST_PER_PAGE = max(1, int(os.environ.get("PLAYER_LIST_PER_PAGE", str(DEFAULT_PLAYER_LIST_PER_PAGE))))
-except ValueError:
-    PLAYER_LIST_PER_PAGE = DEFAULT_PLAYER_LIST_PER_PAGE
-try:
-    MAX_COMPARE_PLAYERS = max(1, int(os.environ.get("MAX_COMPARE_PLAYERS", str(DEFAULT_MAX_COMPARE_PLAYERS))))
-except ValueError:
-    MAX_COMPARE_PLAYERS = DEFAULT_MAX_COMPARE_PLAYERS
-_LOGIN_RATE_LIMIT_WINDOW_SECONDS = int(os.environ.get("LOGIN_RATE_LIMIT_WINDOW_SECONDS", "900"))
-_LOGIN_RATE_LIMIT_MAX_ATTEMPTS = int(os.environ.get("LOGIN_RATE_LIMIT_MAX_ATTEMPTS", "5"))
+_CACHE_TTL_SECONDS = env_int("CACHE_TTL_SECONDS", DEFAULT_CACHE_TTL_SECONDS, minimum=1)
+_CACHE_MAX_ENTRIES = env_int("CACHE_MAX_ENTRIES", DEFAULT_CACHE_MAX_ENTRIES, minimum=1)
+PLAYER_LIST_PER_PAGE = env_int("PLAYER_LIST_PER_PAGE", DEFAULT_PLAYER_LIST_PER_PAGE, minimum=1)
+MAX_COMPARE_PLAYERS = env_int("MAX_COMPARE_PLAYERS", DEFAULT_MAX_COMPARE_PLAYERS, minimum=1)
+_LOGIN_RATE_LIMIT_WINDOW_SECONDS = env_int("LOGIN_RATE_LIMIT_WINDOW_SECONDS", 900, minimum=1)
+_LOGIN_RATE_LIMIT_MAX_ATTEMPTS = env_int("LOGIN_RATE_LIMIT_MAX_ATTEMPTS", 5, minimum=1)
 _DASHBOARD_CACHE = TTLCache(_CACHE_TTL_SECONDS, _CACHE_MAX_ENTRIES)
 _CACHE = _DASHBOARD_CACHE.store
 _LOGIN_RATE_LIMITER = LoginRateLimiter(_LOGIN_RATE_LIMIT_WINDOW_SECONDS, _LOGIN_RATE_LIMIT_MAX_ATTEMPTS)
@@ -176,13 +177,11 @@ _LOGIN_ATTEMPTS = _LOGIN_RATE_LIMITER.attempts
 
 
 # --- Guardrails pipeline (evita doble ejecucion concurrente) ---
-try:
-    _PIPELINE_LOCK_STALE_SECONDS = max(
-        PIPELINE_LOCK_MIN_STALE_SECONDS,
-        int(os.environ.get("PIPELINE_LOCK_STALE_SECONDS", str(PIPELINE_LOCK_DEFAULT_STALE_SECONDS))),
-    )
-except ValueError:
-    _PIPELINE_LOCK_STALE_SECONDS = PIPELINE_LOCK_DEFAULT_STALE_SECONDS
+_PIPELINE_LOCK_STALE_SECONDS = env_int(
+    "PIPELINE_LOCK_STALE_SECONDS",
+    PIPELINE_LOCK_DEFAULT_STALE_SECONDS,
+    minimum=PIPELINE_LOCK_MIN_STALE_SECONDS,
+)
 _PIPELINE_LOCK = PipelineFileLock(
     os.environ.get("PIPELINE_LOCK_PATH", os.path.join(BASE_DIR, ".pipeline_update.lock")),
     stale_seconds=_PIPELINE_LOCK_STALE_SECONDS,
@@ -262,7 +261,32 @@ def add_security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "same-origin")
+    nonce = getattr(g, "csp_nonce", "")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "; ".join(
+            [
+                "default-src 'self'",
+                f"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net",
+                "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+                "font-src 'self' data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+                "img-src 'self' data: https:",
+                "connect-src 'self'",
+                "object-src 'none'",
+                "base-uri 'self'",
+                "form-action 'self'",
+                "frame-ancestors 'none'",
+            ]
+        ),
+    )
+    if _is_prod_runtime:
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     return response
+
+
+@app.before_request
+def create_csp_nonce() -> None:
+    g.csp_nonce = secrets.token_urlsafe(24)
 
 
 # --- CSRF mínimo (session token) ---
@@ -271,7 +295,7 @@ def _csrf_token() -> str:
 
 @app.context_processor
 def inject_csrf_token() -> Dict[str, Callable[[], str]]:
-    return {"csrf_token": _csrf_token()}
+    return {"csrf_token": _csrf_token(), "csp_nonce": g.csp_nonce}
 
 
 def _require_csrf() -> None:
@@ -671,10 +695,32 @@ def position_labels() -> Dict[str, Callable[[Optional[str]], str]]:
     return {"display_position": display_position_label}
 
 # Decorador de login
+def _refresh_authenticated_session() -> bool:
+    user_id = session.get("user_id")
+    if not user_id:
+        return False
+
+    db_session = Session()
+    try:
+        user = db_session.get(User, user_id)
+        if user is None or getattr(user, "is_active", True) is False:
+            session.clear()
+            return False
+        raw_role = (user.role or "").strip().lower()
+        if raw_role not in ROLE_ALIASES:
+            session.clear()
+            return False
+        session["username"] = user.username
+        session["role"] = normalize_role(raw_role)
+        return True
+    finally:
+        db_session.close()
+
+
 def login_required(view_func: Callable) -> Callable:
     @wraps(view_func)
     def wrapper(*args, **kwargs):
-        if not session.get('user_id'):
+        if not _refresh_authenticated_session():
             return redirect(url_for('login', next=request.url))
         return view_func(*args, **kwargs)
     return wrapper
@@ -686,7 +732,7 @@ def roles_required(*roles: str) -> Callable:
     def decorator(view_func: Callable) -> Callable:
         @wraps(view_func)
         def wrapper(*args, **kwargs):
-            if not session.get('user_id'):
+            if not _refresh_authenticated_session():
                 return redirect(url_for('login', next=request.url))
             if current_role() not in normalized_roles:
                 abort(403)
@@ -705,6 +751,7 @@ auth_blueprint = create_auth_blueprint(
     clear_failed_logins=clear_failed_logins,
     register_failed_login=register_failed_login,
     normalize_role=normalize_role,
+    safe_redirect_target=safe_internal_redirect_target,
     roles_required=roles_required,
     is_strong_password=is_strong_password,
     role_admin=ROLE_ADMIN,
@@ -767,7 +814,7 @@ except (FileNotFoundError, RuntimeError):
     model = None
     preprocessor = None
     probability_calibrator = None
-    print(
+    app.logger.warning(
         "Advertencia: modelo o preprocesador no encontrados. "
         "Ejecute la corrida oficial del MVP o habilite AUTO_TRAIN_ON_STARTUP=true."
     )
@@ -779,33 +826,20 @@ def legacy_health_endpoint():
         with engine.connect() as conn:
             conn.exec_driver_sql("SELECT 1")
         return jsonify({"status": "ok"}), 200
-    except Exception as e:
+    except Exception:
         app.logger.exception("Healthcheck failed")
-        return jsonify({"status": "error", "detail": str(e)}), 500
+        return jsonify({"status": "error"}), 500
 
 @app.route("/health")
 def health():
-    """Healthcheck basico: app viva + conectividad DB + calidad operativa."""
-    db = Session()
+    """Healthcheck público mínimo: confirma que app y base responden."""
     try:
         with engine.connect() as conn:
             conn.exec_driver_sql("SELECT 1")
-        data_quality = compute_operational_data_quality(db)
-        return jsonify(
-            {
-                "status": "ok",
-                "database": "ok",
-                "data_quality": data_quality,
-                "limits": {
-                    "eval_pool_max": EVAL_POOL_MAX,
-                },
-            }
-        ), 200
-    except Exception as e:
+        return jsonify({"status": "ok"}), 200
+    except Exception:
         app.logger.exception("Healthcheck failed")
-        return jsonify({"status": "error", "detail": str(e)}), 500
-    finally:
-        db.close()
+        return jsonify({"status": "error"}), 500
 
 
 def prepare_input(player: Player) -> torch.Tensor:
@@ -1487,6 +1521,7 @@ settings_blueprint = create_settings_blueprint(
         cleanup_operational_data=cleanup_operational_data,
         invalidate_dashboard_cache=invalidate_dashboard_cache,
         compute_operational_data_quality=compute_operational_data_quality,
+        PRODUCTION_MODE=_is_prod_runtime,
     )
 )
 app.register_blueprint(settings_blueprint)
@@ -1596,6 +1631,7 @@ players_blueprint = create_players_blueprint(
         ATTRIBUTE_MAX_VALUE=ATTRIBUTE_MAX_VALUE,
         batch_project_players=batch_project_players,
         default_player_photo_url=default_player_photo_url,
+        is_valid_player_photo_url=is_valid_player_photo_url,
         player_attribute_map=player_attribute_map,
         recommend_position_from_attrs=recommend_position_from_attrs,
         weighted_score_from_attrs=weighted_score_from_attrs,

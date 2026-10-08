@@ -405,7 +405,7 @@
 {% block scripts %}
 {{ super() }}
 {% if can_edit_player_data and request.method == 'POST' and request.form.get('action') == 'add' %}
-<script>
+<script nonce="{{ csp_nonce }}">
 document.addEventListener('DOMContentLoaded', () => {
     const modalEl = document.getElementById('statsRecordModal');
     if (modalEl && window.bootstrap) {

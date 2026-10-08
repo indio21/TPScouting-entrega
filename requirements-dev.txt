@@ -1,3 +1,6 @@
-pytest>=8.0
-pytest-cov>=5.0
-playwright>=1.59
+# Herramientas de prueba, auditoria y lint. Instalar despues del runtime.
+pytest==9.0.3
+pytest-cov==7.1.0
+playwright==1.59.0
+ruff==0.16.10
+pip-audit==2.10.1

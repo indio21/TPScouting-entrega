@@ -270,7 +270,7 @@
 
 {% block scripts %}
 {{ super() }}
-<script>
+<script nonce="{{ csp_nonce }}">
 const compactChartOptions = {
     responsive: true,
     maintainAspectRatio: false,

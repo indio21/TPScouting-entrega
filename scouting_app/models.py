@@ -6,7 +6,7 @@ creación rápida de prototipos; en un entorno real se recomienda
 normalizar aún más los datos y añadir restricciones de integridad.
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from sqlalchemy import Column, Integer, String, Float, Boolean, Date, DateTime, ForeignKey, Text
 from sqlalchemy.orm import declarative_base, relationship
@@ -15,9 +15,14 @@ from sqlalchemy.orm import declarative_base, relationship
 Base = declarative_base()
 
 
+def utc_now_naive():
+    """UTC sin tzinfo para conservar compatibilidad con columnas DateTime existentes."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 class TimestampMixin:
-    created_at = Column(DateTime, nullable=True, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=True, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=True, default=utc_now_naive)
+    updated_at = Column(DateTime, nullable=True, default=utc_now_naive, onupdate=utc_now_naive)
 
 
 def calculate_age_from_birth_date(value, today=None):

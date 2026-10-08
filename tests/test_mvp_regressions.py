@@ -122,6 +122,24 @@ def test_default_player_photo_url_uses_local_silhouette(app_module):
     assert app_module.default_player_photo_url(name="Jugador Sin Foto") == "/static/img/player-silhouette.svg"
 
 
+def test_player_photo_url_policy_accepts_only_https_or_own_static_paths(app_module):
+    accepted = ["", "/static/img/player-silhouette.svg", "https://images.example/player.jpg"]
+    rejected = [
+        "http://images.example/player.jpg",
+        "//images.example/player.jpg",
+        "javascript:alert(1)",
+        "data:image/svg+xml,<svg></svg>",
+        "/uploads/player.jpg",
+        "/static/../secret.txt",
+        "/static/%252e%252e/secret.txt",
+        r"/static\evil.svg",
+        "https://user:password@images.example/player.jpg",
+    ]
+
+    assert all(app_module.is_valid_player_photo_url(value) for value in accepted)
+    assert not any(app_module.is_valid_player_photo_url(value) for value in rejected)
+
+
 def test_photo_backfill_replaces_legacy_dicebear_avatar(app_module, db):
     player = _create_player(
         app_module,
@@ -407,6 +425,52 @@ def test_settings_pipeline_exception_returns_message_and_releases_lock(scouting_
     assert captured["status_messages"][0] == "No se pudo completar la actualizacion: fallo controlado"
 
 
+def test_settings_does_not_run_pipeline_in_production_request(scouting_app_dir, monkeypatch):
+    monkeypatch.syspath_prepend(str(scouting_app_dir))
+    settings_module = importlib.import_module("routes.settings")
+    from flask import Flask
+
+    captured = {}
+    calls = []
+
+    monkeypatch.setattr(
+        settings_module,
+        "render_template",
+        lambda _template_name, **kwargs: captured.update(kwargs) or "ok",
+    )
+
+    class FakeSession:
+        def close(self):
+            pass
+
+    def roles_required(_role):
+        return lambda fn: fn
+
+    deps = SimpleNamespace(
+        ROLE_ADMIN="administrador",
+        roles_required=roles_required,
+        require_csrf=lambda: None,
+        PRODUCTION_MODE=True,
+        pipeline_lock=SimpleNamespace(acquire=lambda **_kwargs: calls.append("lock")),
+        update_database_pipeline=lambda **_kwargs: calls.append("pipeline"),
+        EVAL_POOL_MAX=100,
+        SYNC_SHORTLIST_ENABLED=False,
+        Session=lambda: FakeSession(),
+        compute_operational_data_quality=lambda _db: {},
+        cleanup_operational_data=lambda _db: {},
+        invalidate_dashboard_cache=lambda: None,
+    )
+    app = Flask(__name__)
+    app.secret_key = "test-secret"
+    app.register_blueprint(settings_module.create_settings_blueprint(deps=deps))
+
+    response = app.test_client().post("/settings", data={"action": "update_database"})
+
+    assert response.status_code == 200
+    assert calls == []
+    assert "desactivados en produccion" in captured["status_messages"][0]
+
+
 def test_app_module_fixture_uses_stable_module_name(app_module):
     assert app_module.__name__ == "scouting_app_app_test"
 
@@ -593,6 +657,30 @@ def test_login_rate_limit_blocks_after_repeated_failures(client, app_module, db)
     assert "bloquearon temporalmente" in blocked.get_data(as_text=True)
 
 
+def test_login_rate_limit_cannot_be_evaded_with_rotating_forwarded_headers(client, app_module, db):
+    _create_user(db, app_module.User, "rotating_headers", "blocked123", role="scout")
+
+    for attempt in range(5):
+        csrf_token = _get_csrf_token(client, "/login")
+        response = client.post(
+            "/login",
+            data={"username": "rotating_headers", "password": "mal", "csrf_token": csrf_token},
+            headers={"X-Forwarded-For": f"198.51.100.{attempt + 1}"},
+            environ_overrides={"REMOTE_ADDR": f"203.0.113.{attempt + 1}"},
+        )
+        assert response.status_code == 200
+
+    csrf_token = _get_csrf_token(client, "/login")
+    blocked = client.post(
+        "/login",
+        data={"username": "rotating_headers", "password": "mal", "csrf_token": csrf_token},
+        headers={"X-Forwarded-For": "192.0.2.200"},
+        environ_overrides={"REMOTE_ADDR": "192.0.2.201"},
+    )
+
+    assert blocked.status_code == 429
+
+
 def test_timestamps_are_populated_on_new_records(app_module, db):
     player = app_module.Player(
         name="Jugador Audit",
@@ -675,7 +763,7 @@ def test_cleanup_operational_data_removes_legacy_players_without_national_id(app
     assert db.query(app_module.Player).filter_by(name="Jugador Valido").count() == 1
 
 
-def test_health_reports_operational_data_quality(client, app_module, db):
+def test_public_health_returns_only_minimal_status(client, app_module, db):
     player = app_module.Player(
         name="Legacy Health",
         national_id=None,
@@ -703,9 +791,19 @@ def test_health_reports_operational_data_quality(client, app_module, db):
     payload = response.get_json()
 
     assert response.status_code == 200
-    assert payload["status"] == "ok"
-    assert payload["database"] == "ok"
-    assert payload["data_quality"]["missing_national_id"] == 1
+    assert payload == {"status": "ok"}
+
+
+def test_public_health_hides_internal_exception_details(client, app_module, monkeypatch):
+    def fail_connect():
+        raise RuntimeError("postgresql://secret-user:secret-password@private-host/database")
+
+    monkeypatch.setattr(app_module.engine, "connect", fail_connect)
+    response = client.get("/health")
+
+    assert response.status_code == 500
+    assert response.get_json() == {"status": "error"}
+    assert "secret-password" not in response.get_data(as_text=True)
 
 
 def test_register_creates_user_with_valid_role(client, app_module, db):
@@ -924,6 +1022,26 @@ def test_manage_players_rejects_invalid_age(client, app_module, db):
     assert db.query(app_module.Player).filter_by(national_id="40111223").count() == 0
 
 
+def test_manage_players_rejects_unsafe_photo_url(client, app_module, db):
+    _create_user(db, app_module.User, "scout_photo_create", "scout1234", role="scout")
+    _login(client, "scout_photo_create", "scout1234")
+    csrf_token = _get_csrf_token(client, "/players/manage")
+
+    response = client.post(
+        "/players/manage",
+        data=_valid_manage_player_payload(
+            national_id="40111229",
+            photo_url="javascript:alert(1)",
+            csrf_token=csrf_token,
+        ),
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert "La foto debe usar HTTPS" in response.get_data(as_text=True)
+    assert db.query(app_module.Player).filter_by(national_id="40111229").count() == 0
+
+
 def test_manage_players_rejects_missing_required_fields(client, app_module, db):
     _create_user(db, app_module.User, "scout_required", "scout1234", role="scout")
     _login(client, "scout_required", "scout1234")
@@ -1073,6 +1191,32 @@ def test_import_players_preview_and_confirm_csv(client, app_module, db):
     assert created.age == app_module.Player.calculate_age_from_birth_date(created.birth_date)
 
 
+def test_import_players_rejects_unsafe_photo_url(client, app_module, db):
+    _create_user(db, app_module.User, "scout_import_photo", "scout1234", role="scout")
+    _login(client, "scout_import_photo", "scout1234")
+    csrf_token = _get_csrf_token(client, "/players/import")
+    csv_text = (
+        "Nombre,DNI_ID,FechaNacimiento,Posicion,Club,Pais,Ritmo,Disparo,Pase,Regate,"
+        "Defensa,Fisico,Vision,Marcaje,Determinacion,Tecnica,AltoPotencial,FotoURL\n"
+        "CSV Foto,50111229,2010-03-21,Delantero,Club CSV,Argentina,15,14,13,16,"
+        "10,14,15,12,16,17,1,javascript:alert(1)\n"
+    )
+
+    response = client.post(
+        "/players/import",
+        data={
+            "csrf_token": csrf_token,
+            "mode": "preview",
+            "csv_file": (io.BytesIO(csv_text.encode("utf-8")), "jugadores.csv"),
+        },
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    assert "FotoURL debe ser una URL HTTPS" in response.get_data(as_text=True)
+    assert db.query(app_module.Player).filter_by(national_id="50111229").count() == 0
+
+
 def test_edit_player_updates_core_fields(client, app_module, db):
     _create_user(db, app_module.User, "scout_edit", "scout1234", role="scout")
     player = _create_player(app_module, db, name="Editar Base", national_id="42233445")
@@ -1112,6 +1256,33 @@ def test_edit_player_updates_core_fields(client, app_module, db):
     assert player.birth_date == date(2009, 3, 21)
     assert player.age == app_module.Player.calculate_age_from_birth_date(player.birth_date)
     assert player.position == "Mediocampista"
+
+
+def test_edit_player_rejects_unsafe_photo_url_without_mutating_player(client, app_module, db):
+    _create_user(db, app_module.User, "scout_photo_edit", "scout1234", role="scout")
+    player = _create_player(
+        app_module,
+        db,
+        name="Foto Original",
+        national_id="42233449",
+        photo_url="/static/img/player-silhouette.svg",
+    )
+    _login(client, "scout_photo_edit", "scout1234")
+    csrf_token = _get_csrf_token(client, f"/edit_player/{player.id}")
+    payload = _valid_manage_player_payload(
+        name="Foto Alterada",
+        national_id="42233449",
+        photo_url="data:image/svg+xml,<svg></svg>",
+        csrf_token=csrf_token,
+    )
+
+    response = client.post(f"/edit_player/{player.id}", data=payload, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert "La foto debe usar HTTPS" in response.get_data(as_text=True)
+    db.refresh(player)
+    assert player.name == "Foto Original"
+    assert player.photo_url == "/static/img/player-silhouette.svg"
 
 
 def test_delete_player_removes_record(client, app_module, db):

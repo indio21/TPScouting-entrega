@@ -253,7 +253,7 @@
 
 {% block scripts %}
 {{ super() }}
-<script>
+<script nonce="{{ csp_nonce }}">
 (function () {
     const probCanvas = document.getElementById('probChart');
     if (probCanvas && window.Chart) {

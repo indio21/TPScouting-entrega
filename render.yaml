@@ -1,29 +1,31 @@
 databases:
-  - name: tpscouting-entrega-db
+  - name: tpscouting-mvp-db
     plan: free
 
 services:
   - type: web
-    name: tpscouting-entrega
+    name: tpscouting-mvp
     runtime: python
     plan: free
     rootDir: .
     healthCheckPath: /health
     buildCommand: |
-      pip install --upgrade pip
-      pip install --extra-index-url https://download.pytorch.org/whl/cpu torch==2.9.1+cpu
-      pip install -r requirements.txt
+      pip install --upgrade pip==26.2.1 setuptools==83.0.0
+      pip install -r requirements-lock.txt
+      pip install -r requirements-torch-cpu.txt
     startCommand: python scouting_app/seed_demo_data.py && gunicorn app:app --chdir scouting_app --workers 1 --threads 2 --timeout 120 --bind 0.0.0.0:$PORT
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
       - key: APP_SECRET_KEY
         generateValue: true
       - key: APP_DB_URL
         fromDatabase:
-          name: tpscouting-entrega-db
+          name: tpscouting-mvp-db
           property: connectionString
       - key: TRAINING_DB_URL
         fromDatabase:
-          name: tpscouting-entrega-db
+          name: tpscouting-mvp-db
           property: connectionString
       - key: AUTO_TRAIN_ON_STARTUP
         value: "0"

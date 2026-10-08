@@ -99,6 +99,22 @@ def test_settings_requires_admin_after_hotfix(client, app_module, db):
     assert resp.status_code == 403
 
 
+def test_denied_settings_operation_does_not_modify_data(client, app_module, db):
+    _create_user(db, app_module.User, "scout_denied_settings", "p3", role="scout")
+    _create_player(app_module, db, name="Debe conservarse", national_id="30123459")
+    _login(client, "scout_denied_settings", "p3")
+    csrf_token = _get_csrf_token(client, "/players")
+
+    response = client.post(
+        "/settings",
+        data={"action": "cleanup_demo_data", "csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 403
+    assert db.query(app_module.Player).filter_by(national_id="30123459").count() == 1
+
+
 def test_login_page_renders_polished_layout(client):
     resp = client.get("/login")
     body = resp.get_data(as_text=True)

@@ -264,7 +264,7 @@
 {% block scripts %}
 {{ super() }}
 {% if comparison %}
-<script>
+<script nonce="{{ csp_nonce }}">
 const barsData = {{ comparison.chart_payload|tojson }};
 const barsCtx = document.getElementById('comparisonBars');
 if (barsCtx && window.Chart) {

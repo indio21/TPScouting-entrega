@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -713,7 +713,7 @@ def train_model(
     )
 
     metadata = {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "seed": SEED,
         "config": {
             "epochs_requested": int(epochs),

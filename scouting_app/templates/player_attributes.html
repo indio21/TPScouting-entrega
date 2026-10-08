@@ -323,7 +323,7 @@
 {% block scripts %}
 {{ super() }}
 {% if payload.labels %}
-<script>
+<script nonce="{{ csp_nonce }}">
 const attributeCtx = document.getElementById('attributeChart');
 if (attributeCtx && window.Chart) {
     const attributeData = {{ payload | tojson }};
@@ -376,7 +376,7 @@ if (attributeCtx && window.Chart) {
 </script>
 {% endif %}
 {% if can_edit_player_data and request.method == 'POST' and request.form.get('action') == 'add' %}
-<script>
+<script nonce="{{ csp_nonce }}">
 document.addEventListener('DOMContentLoaded', () => {
     const modalEl = document.getElementById('attributesRecordModal');
     if (modalEl && window.bootstrap) {

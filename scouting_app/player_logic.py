@@ -7,6 +7,7 @@ la aplicacion Flask y los scripts de entrenamiento/sincronizacion.
 from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
+from urllib.parse import unquote, urlsplit
 
 ATTRIBUTE_FIELDS: List[str] = [
     "pace",
@@ -193,3 +194,36 @@ def default_player_photo_url(
 ) -> str:
     """Retorna la silueta local usada cuando el jugador no tiene foto."""
     return "/static/img/player-silhouette.svg"
+
+
+def is_valid_player_photo_url(value: Optional[str]) -> bool:
+    """Valida fotos HTTPS externas o recursos propios bajo ``/static/``."""
+    raw = (value or "").strip()
+    if not raw:
+        return True
+    if "\\" in raw or any(ord(character) < 32 or ord(character) == 127 for character in raw):
+        return False
+
+    decoded = raw
+    for _ in range(3):
+        next_value = unquote(decoded)
+        if next_value == decoded:
+            break
+        decoded = next_value
+    if "\\" in decoded:
+        return False
+    try:
+        parsed = urlsplit(decoded)
+    except ValueError:
+        return False
+
+    if parsed.scheme:
+        return (
+            parsed.scheme.lower() == "https"
+            and bool(parsed.hostname)
+            and parsed.username is None
+            and parsed.password is None
+        )
+    if parsed.netloc or not parsed.path.startswith("/static/"):
+        return False
+    return ".." not in parsed.path.split("/")

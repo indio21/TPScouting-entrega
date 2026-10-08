@@ -966,7 +966,7 @@
 
 {% block scripts %}
 {{ super() }}
-<script>
+<script nonce="{{ csp_nonce }}">
 const radarCtx = document.getElementById('technicalRadar');
 if (radarCtx && window.Chart) {
     new Chart(radarCtx, {

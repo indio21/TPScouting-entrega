@@ -45,9 +45,9 @@
             <a href="{{ url_for('edit_director', director_id=director.id) }}" class="btn btn-outline-primary btn-sm">
               <i class="bi bi-pencil"></i> Editar
             </a>
-            <form action="{{ url_for('delete_director', director_id=director.id) }}" method="post">
+            <form action="{{ url_for('delete_director', director_id=director.id) }}" method="post" class="js-confirm-delete">
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Seguro que desea eliminar?')">
+              <button type="submit" class="btn btn-outline-danger btn-sm">
                 <i class="bi bi-trash"></i> Eliminar
               </button>
             </form>

@@ -6,6 +6,7 @@ import secrets
 import threading
 import time
 from typing import Dict, List, Optional
+from urllib.parse import unquote, urlsplit
 
 from flask import abort
 
@@ -20,8 +21,14 @@ class LoginRateLimiter:
         self._lock = threading.Lock()
 
     def key(self, username: Optional[str], client_ip: str) -> str:
+        """Agrupa intentos por cuenta sin confiar en cabeceras de proxy.
+
+        ``client_ip`` se conserva en la firma por compatibilidad, pero no forma
+        parte de la clave. Así, rotar ``X-Forwarded-For`` o la IP de origen no
+        permite seguir probando contraseñas contra el mismo usuario.
+        """
         normalized_username = (username or "").strip().lower() or "-"
-        return f"{client_ip}:{normalized_username}"
+        return normalized_username
 
     def prune(self, now_ts: Optional[float] = None) -> None:
         now_ts = now_ts if now_ts is not None else time.time()
@@ -63,11 +70,47 @@ def csrf_token(session_obj) -> str:
 
 def require_csrf(form, headers, session_obj) -> None:
     token = form.get("csrf_token") or headers.get("X-CSRF-Token")
-    if not token or token != session_obj.get("csrf_token"):
+    expected_token = session_obj.get("csrf_token")
+    if not isinstance(token, str) or not isinstance(expected_token, str):
+        abort(400)
+    if not secrets.compare_digest(token, expected_token):
         abort(400)
 
 
 def client_ip_from_request(request_obj) -> str:
-    forwarded_for = (request_obj.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
-    return forwarded_for or request_obj.remote_addr or "unknown"
+    """Devuelve la dirección del peer sin confiar en headers del cliente.
+
+    Si más adelante se configura una cantidad conocida de proxies confiables,
+    esa normalización debe hacerse una sola vez en WSGI y documentarse junto al
+    despliegue. Hasta entonces, ``X-Forwarded-For`` es entrada no confiable.
+    """
+    return request_obj.remote_addr or "unknown"
+
+
+def safe_internal_redirect_target(target: Optional[str]) -> Optional[str]:
+    """Acepta solo rutas absolutas internas que el navegador no reinterpretará."""
+    if not isinstance(target, str) or not target:
+        return None
+    if any(ord(character) < 32 or ord(character) == 127 for character in target):
+        return None
+    if "\\" in target:
+        return None
+
+    # Flask decodifica el query string una vez. Revisar también hasta dos capas
+    # adicionales evita que separadores codificados lleguen al navegador.
+    decoded_target = target
+    for _ in range(2):
+        decoded_target = unquote(decoded_target)
+        if "\\" in decoded_target or decoded_target.startswith("//"):
+            return None
+
+    try:
+        parsed = urlsplit(target)
+    except ValueError:
+        return None
+    if parsed.scheme or parsed.netloc or not parsed.path.startswith("/"):
+        return None
+    if parsed.path.startswith("//"):
+        return None
+    return target
 

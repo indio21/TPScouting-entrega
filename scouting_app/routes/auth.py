@@ -17,6 +17,7 @@ def create_auth_blueprint(
     clear_failed_logins: Callable[[Optional[str]], None],
     register_failed_login: Callable[[Optional[str]], None],
     normalize_role: Callable[[Optional[str]], str],
+    safe_redirect_target: Callable[[Optional[str]], Optional[str]],
     roles_required: Callable[..., Callable],
     is_strong_password: Callable[[str], bool],
     role_admin: str,
@@ -46,13 +47,22 @@ def create_auth_blueprint(
                 )
             db = Session()
             user = db.query(User).filter(User.username == username).first()
-            db.close()
+            authenticated_user = None
             if user and check_password_hash(user.password_hash, password):
+                authenticated_user = {
+                    "id": user.id,
+                    "username": user.username,
+                    "role": normalize_role(user.role),
+                }
+            db.close()
+            if authenticated_user:
                 clear_failed_logins(username)
-                session["user_id"] = user.id
-                session["username"] = user.username
-                session["role"] = normalize_role(user.role)
-                return redirect(request.args.get("next") or url_for("index"))
+                session.clear()
+                session["user_id"] = authenticated_user["id"]
+                session["username"] = authenticated_user["username"]
+                session["role"] = authenticated_user["role"]
+                target = safe_redirect_target(request.args.get("next"))
+                return redirect(target or url_for("index"))
             register_failed_login(username)
             return render_template("login.html", error="Usuario o contrasena invalidos")
         return render_template("login.html")

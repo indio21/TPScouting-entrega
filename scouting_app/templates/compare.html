@@ -214,7 +214,7 @@
 {% block scripts %}
 {{ super() }}
 {% if comparison %}
-<script>
+<script nonce="{{ csp_nonce }}">
 const compareRadarCtx = document.getElementById('compareRadar');
 if (compareRadarCtx && window.Chart) {
     const labels = {{ comparison.attributes | map(attribute='label') | list | tojson }};

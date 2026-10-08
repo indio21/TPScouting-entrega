@@ -27,7 +27,7 @@ def live_server(app_module):
         thread.join(timeout=5)
 
 
-def _create_visual_user_and_player(app_module) -> None:
+def _create_visual_user_and_player(app_module) -> int:
     session = app_module.Session()
     try:
         user = app_module.User(
@@ -58,6 +58,7 @@ def _create_visual_user_and_player(app_module) -> None:
         )
         session.add_all([user, player])
         session.commit()
+        return int(player.id)
     finally:
         session.close()
 
@@ -71,13 +72,20 @@ def _has_no_horizontal_overflow(page) -> bool:
 
 
 def test_login_and_dashboard_render_in_real_browser(app_module, live_server, tmp_path):
-    _create_visual_user_and_player(app_module)
+    player_id = _create_visual_user_and_player(app_module)
 
     with sync_api.sync_playwright() as playwright:
         browser = playwright.chromium.launch()
         try:
             desktop = browser.new_context(viewport={"width": 1366, "height": 768})
             page = desktop.new_page()
+            policy_errors = []
+            page.on(
+                "console",
+                lambda message: policy_errors.append(message.text)
+                if "content security policy" in message.text.lower() or "refused to" in message.text.lower()
+                else None,
+            )
             page.goto(f"{live_server}/login", wait_until="networkidle")
             expect(page.get_by_role("heading", name="TPScouting")).to_be_visible()
             assert _has_no_horizontal_overflow(page)
@@ -89,10 +97,18 @@ def test_login_and_dashboard_render_in_real_browser(app_module, live_server, tmp
 
             page.goto(f"{live_server}/dashboard", wait_until="networkidle")
             expect(page.get_by_role("heading", name="Mesa de scouting")).to_be_visible()
+            expect(page.locator("#positionChart")).to_be_visible()
+            assert page.evaluate("() => window.Chart && Chart.getChart('positionChart') !== undefined")
             assert _has_no_horizontal_overflow(page)
             dashboard_shot = tmp_path / "dashboard-desktop.png"
             page.screenshot(path=str(dashboard_shot), full_page=True)
             assert dashboard_shot.stat().st_size > 1000
+
+            page.goto(f"{live_server}/player/{player_id}", wait_until="networkidle")
+            page.locator("button[data-bs-target='#matchHistoryModal']").click()
+            expect(page.locator("#matchHistoryModal")).to_have_class(re.compile(r"\bshow\b"))
+            expect(page.locator("#matchHistoryModal form")).to_be_visible()
+            assert policy_errors == []
             desktop.close()
 
             mobile = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True)

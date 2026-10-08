@@ -137,8 +137,9 @@
 
                     <li class="nav-item">
                         <button type="button"
+                                id="printPageButton"
                                 class="btn btn-outline-light btn-sm d-flex align-items-center gap-2"
-                                onclick="window.print()">
+                                >
                             <i class="bi bi-printer"></i> Imprimir
                         </button>
                     </li>
@@ -219,6 +220,21 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
+    <script nonce="{{ csp_nonce }}">
+    document.addEventListener('DOMContentLoaded', function() {
+        const printButton = document.getElementById('printPageButton');
+        if (printButton) {
+            printButton.addEventListener('click', function() { window.print(); });
+        }
+        document.querySelectorAll('form.js-confirm-delete').forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!window.confirm('Seguro que desea eliminar?')) {
+                    event.preventDefault();
+                }
+            });
+        });
+    });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -187,6 +187,8 @@ def create_players_blueprint(*, deps: SimpleNamespace) -> Blueprint:
                 errors.append("Fecha de nacimiento obligatoria.")
             elif birth_date is not None and not deps.is_valid_eval_age(age):
                 errors.append("La edad calculada por fecha de nacimiento debe estar entre 12 y 18.")
+            if photo_url and not deps.is_valid_player_photo_url(photo_url):
+                errors.append("FotoURL debe ser una URL HTTPS o una ruta propia bajo /static/.")
 
             attr_values: Dict[str, int] = {}
             import_attr_columns = {
@@ -1360,6 +1362,8 @@ def create_players_blueprint(*, deps: SimpleNamespace) -> Blueprint:
             photo_url = (request.form.get("photo_url") or "").strip() or None
             if not name:
                 errors.append("El nombre es obligatorio.")
+            if photo_url and not deps.is_valid_player_photo_url(photo_url):
+                errors.append("La foto debe usar HTTPS o una ruta propia bajo /static/.")
             if not national_id:
                 errors.append("El DNI debe contener solo números.")
             else:
@@ -1545,6 +1549,8 @@ def create_players_blueprint(*, deps: SimpleNamespace) -> Blueprint:
                     photo_url = (request.form.get("photo_url") or "").strip() or None
                     if not name:
                         errors.append("El nombre es obligatorio.")
+                    if photo_url and not deps.is_valid_player_photo_url(photo_url):
+                        errors.append("La foto debe usar HTTPS o una ruta propia bajo /static/.")
                     if not national_id:
                         errors.append("Ingresa un DNI/ID valido (solo numeros).")
                     else:

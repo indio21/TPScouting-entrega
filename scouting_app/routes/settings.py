@@ -24,11 +24,17 @@ def create_settings_blueprint(*, deps: SimpleNamespace) -> Blueprint:
         if request.method == "POST":
             action = request.form.get("action")
             if action == "update_database":
-                start = time.time()
-                if not deps.pipeline_lock.acquire(blocking=False):
+                if getattr(deps, "PRODUCTION_MODE", False):
+                    status_messages = [
+                        "La generacion de datos y el entrenamiento web estan desactivados en produccion. "
+                        "Ejecuta el flujo operativo documentado fuera del request."
+                    ]
+                    flash("La actualizacion general esta desactivada en produccion.", "warning")
+                elif not deps.pipeline_lock.acquire(blocking=False):
                     status_messages = ["Ya hay una actualizacion en curso. Reintenta en unos minutos."]
                     flash("Ya hay una actualizacion en curso. Reintenta en unos minutos.", "warning")
                 else:
+                    start = time.time()
                     success = False
                     try:
                         success, logs = deps.update_database_pipeline(

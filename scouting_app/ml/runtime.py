@@ -63,10 +63,10 @@ def load_runtime_artifacts(
             if original_exc is not None:
                 raise original_exc
             raise FileNotFoundError(message)
-        print(message)
+        logger.warning(message)
         success, logs = update_callback()
         for log in logs:
-            print(log)
+            logger.info("%s", log)
         if not success:
             raise RuntimeError(
                 "No se pudo reentrenar el modelo automaticamente. Ejecute train_model.py manualmente."
