@@ -10,6 +10,15 @@ Trabajo final orientado al scouting de futbol juvenil, con una app web para:
 - estimar potencial con un modelo MLP (PyTorch)
 - visualizar datos en dashboard y fichas
 
+## Documento académico
+
+- [Trabajo final en PDF](documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_2026-10-10.pdf)
+- [Trabajo final editable en Word](documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_2026-10-10.docx)
+
+Ambos archivos corresponden a la misma versión verificada. El PDF es la copia
+recomendada para lectura y evaluación; el Word se incluye para revisar campos,
+índices y estructura editable.
+
 ## Demo local portable
 
 Después de instalar las dependencias según `GUIA_DEMO_PROFESOR.md`, este comando genera y verifica `60` jugadores sintéticos, crea un administrador local e inicia la aplicación:
