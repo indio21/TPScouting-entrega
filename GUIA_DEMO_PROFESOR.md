@@ -20,11 +20,22 @@ Desde la raiz del repositorio:
 ```powershell
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-torch-cpu.txt
 .\.venv\Scripts\python.exe .\scripts\iniciar_demo.py
 ```
 
-### Linux o macOS
+### Linux
+
+```bash
+python3.11 -m venv .venv
+./.venv/bin/python -m pip install --upgrade pip
+./.venv/bin/python -m pip install -r requirements-lock.txt
+./.venv/bin/python -m pip install -r requirements-torch-cpu.txt
+./.venv/bin/python ./scripts/iniciar_demo.py
+```
+
+### macOS
 
 ```bash
 python3.11 -m venv .venv
@@ -32,6 +43,10 @@ python3.11 -m venv .venv
 ./.venv/bin/python -m pip install -r requirements.txt
 ./.venv/bin/python ./scripts/iniciar_demo.py
 ```
+
+La instalación fue validada localmente en Windows 11 con Python 3.11.9 y en
+Linux mediante CI con Python 3.11 y 3.12. macOS dispone de instrucciones porque
+PyTorch publica allí el wheel estándar, pero no fue probado localmente.
 
 Luego abrir `http://127.0.0.1:5000/`.
 

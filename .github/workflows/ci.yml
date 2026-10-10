@@ -70,3 +70,9 @@ jobs:
 
       - name: Audit installed dependencies
         run: python -m pip_audit --local --progress-spinner off
+
+      - name: Audit direct runtime manifest
+        # The CPU wheel has a local version suffix (+cpu), which pip-audit can
+        # omit from an installed-environment scan. Auditing requirements.txt
+        # also checks the canonical PyPI torch version.
+        run: python -m pip_audit -r requirements.txt --no-deps --progress-spinner off
