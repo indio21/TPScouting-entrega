@@ -255,3 +255,8 @@ Seguridad MVP:
 ## Alcance del MVP
 
 Este proyecto es un MVP academico. La prediccion de potencial se valida con dataset sintetico y se usa como soporte a la toma de decisiones, no como reemplazo del criterio del cuerpo tecnico.
+
+No se deben cargar datos personales reales, especialmente de menores. Antes de
+cualquier piloto institucional deben completarse y probarse las puertas legales,
+operativas y técnicas documentadas en
+[`docs/REAL_DATA_READINESS.md`](docs/REAL_DATA_READINESS.md).

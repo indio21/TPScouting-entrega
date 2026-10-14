@@ -6,6 +6,8 @@ Esta guia permite revisar la aplicacion sin descargar una base de datos externa,
 
 - La demo genera `60` jugadores juveniles ficticios.
 - Todos los nombres, documentos, fechas, atributos, partidos, evaluaciones e informes son sinteticos.
+- No cargue información de jugadores reales. El MVP no está habilitado para
+  tratar datos personales de menores; consulte `docs/REAL_DATA_READINESS.md`.
 - La semilla fija `42` permite reproducir el mismo conjunto inicial.
 - Las edades abarcan de 12 a 18 anos.
 - La edad se calcula desde la fecha de nacimiento y la categoria corresponde al ano de nacimiento.
