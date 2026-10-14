@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import logging
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
@@ -26,6 +27,8 @@ from models import (
     ScoutReport,
 )
 from player_logic import ATTRIBUTE_FIELDS, POSITION_CHOICES, position_weights
+
+logger = logging.getLogger(__name__)
 
 STATS_FEATURE_COLUMNS: List[str] = [
     "stats_entry_count",
@@ -324,8 +327,8 @@ def _temporal_cache_source_metadata(db_path: Optional[Path], engine=None) -> Dic
             with engine.connect() as connection:
                 player_count = connection.exec_driver_sql("SELECT COUNT(*) FROM players").scalar()
             metadata["player_count"] = int(player_count or 0)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("No se pudo contar jugadores para validar la cache temporal: %s", exc)
     return metadata
 
 
@@ -1515,11 +1518,6 @@ def _temporal_target_dataframe(
         observed_scout_projection_score = (
             float(observed_scout_metrics.get("observed_scout_projection_score"))
             if observed_scout_metrics.get("observed_scout_projection_score") is not None
-            else np.nan
-        )
-        observed_scout_projection_trend = (
-            float(observed_scout_metrics.get("observed_scout_projection_trend"))
-            if observed_scout_metrics.get("observed_scout_projection_trend") is not None
             else np.nan
         )
         future_scout_projection_score = (

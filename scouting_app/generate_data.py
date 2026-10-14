@@ -848,7 +848,6 @@ def synthetic_matches_and_stats(
         trajectory = trajectory_state(progress_fraction, profile)
         attrs = {field: float(getattr(entry, field) or ATTRIBUTE_MIN_VALUE) for field in ATTRIBUTE_FIELDS}
         weighted_score = weighted_score_from_attrs(attrs, player.position)
-        avg_attr_score = sum(attrs.values()) / len(attrs)
         synergy_score = position_synergy_score(player.position, attrs)
         decision_profile = clamp(
             (

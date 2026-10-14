@@ -48,10 +48,7 @@ def create_settings_blueprint(*, deps: SimpleNamespace) -> Blueprint:
                     finally:
                         duration = round(time.time() - start, 2)
                         status_messages.append(f"Duracion total de la actualizacion: {duration}s")
-                        try:
-                            current_app.logger.info("Pipeline update_database finished in %ss", duration)
-                        except Exception:
-                            pass
+                        current_app.logger.info("Pipeline update_database finished in %ss", duration)
                         deps.pipeline_lock.release()
 
                     if success:

@@ -68,7 +68,7 @@ def evaluate_saved_model(
         metadata = json.loads(Path(metadata_path).read_text(encoding="utf-8"))
 
     load_started_at = time.perf_counter()
-    features_df, y, data_summary = load_data(
+    features_df, _y, data_summary = load_data(
         db_url,
         use_cache=use_cache,
         cache_path=cache_path,

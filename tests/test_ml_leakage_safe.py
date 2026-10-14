@@ -89,6 +89,30 @@ def test_frozen_policy_applies_same_threshold_to_every_partition():
     assert test["temporal_target_threshold"].iloc[0] == policy.progression_threshold
 
 
+def test_breakout_path_requires_the_fitted_breakout_conditions():
+    dataframe = target_frame()
+    policy = fit_temporal_target_policy(dataframe.iloc[:80])
+    row = dataframe.iloc[[100]].copy()
+    row["progression_score"] = policy.progression_threshold + 1.0
+    row["future_final_score"] = policy.future_final_floor
+    row["future_scout_projection_score"] = policy.future_projection_floor
+    row["future_availability_pct"] = policy.availability_floor
+    row["future_fatigue_pct"] = policy.fatigue_ceiling
+    row["future_injury_rate"] = policy.injury_ceiling
+    row["observed_weighted_volatility"] = policy.volatility_threshold
+    row["future_minutes_per_match"] = 0.0
+    row["future_start_rate"] = 0.0
+    row["future_natural_position_rate"] = 0.0
+    row["weighted_score_growth"] = policy.breakout_growth_threshold - 1.0
+    row["final_score_growth"] = policy.breakout_final_growth_threshold - 1.0
+
+    result = apply_temporal_target_policy(row, policy).iloc[0]
+
+    assert bool(result["temporal_target_label"]) is True
+    assert bool(result["temporal_consolidation_path"]) is False
+    assert bool(result["temporal_breakout_path"]) is False
+
+
 def test_combined_probability_is_bounded_and_renormalizes_missing_components():
     assert combined_probability(0.5) == 0.5
     value = combined_probability(0.5, average_final_score=8.0, fit_score=16.0)

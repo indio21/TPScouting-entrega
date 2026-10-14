@@ -1,14 +1,13 @@
 import os
 import logging
-import time
 import secrets
 import sys
 import subprocess
 from typing import Any, List, Tuple, Callable, Optional, Dict
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from statistics import mean
 from types import SimpleNamespace
-from flask import Flask, render_template, redirect, url_for, request, session, flash, abort, jsonify, g
+from flask import Flask, render_template, redirect, url_for, request, session, abort, jsonify, g
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session as SQLAlchemySession, sessionmaker, load_only
 import numpy as np
@@ -29,12 +28,11 @@ from models import (
     ScoutReport,
 )
 from werkzeug.security import generate_password_hash
+from werkzeug.routing import BuildError
 from functools import wraps
 from db_utils import normalize_db_url, create_app_engine, ensure_player_columns, is_sqlite_url
 from ml.runtime import (
     apply_probability_calibrator,
-    load_model_state,
-    load_probability_calibrator,
     load_runtime_artifacts,
 )
 from ml.scoring import combined_probability
@@ -603,8 +601,8 @@ def navbar_url_helpers() -> Dict[str, Callable[..., str]]:
         for ep in endpoints:
             try:
                 return url_for(ep, **values)
-            except Exception:
-                continue
+            except BuildError:
+                app.logger.debug("Endpoint no disponible para navbar: %s", ep)
         return "#"
     return dict(first_url=first_url)
 

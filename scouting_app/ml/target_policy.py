@@ -169,7 +169,7 @@ def apply_temporal_target_policy(df: pd.DataFrame, policy: TemporalTargetPolicy)
     result["temporal_quality_gate"] = quality_gate
     result["temporal_target_candidate"] = selected
     result["temporal_consolidation_path"] = selected & consolidation
-    result["temporal_breakout_path"] = selected & ~result["temporal_consolidation_path"]
+    result["temporal_breakout_path"] = selected & breakout & ~result["temporal_consolidation_path"]
     result[TARGET_COLUMN] = selected.astype(bool)
     return result
 

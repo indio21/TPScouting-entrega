@@ -39,13 +39,15 @@ def test_probability_calibrator_supports_common_interfaces(app_module, caplog):
 
 
 def test_missing_or_invalid_calibrator_is_optional(app_module, tmp_path, caplog):
+    from ml.runtime import load_probability_calibrator
+
     missing = tmp_path / "missing.joblib"
-    assert app_module.load_probability_calibrator(str(missing)) is None
+    assert load_probability_calibrator(str(missing)) is None
 
     invalid = tmp_path / "invalid.joblib"
     invalid.write_text("no es joblib", encoding="utf-8")
     with caplog.at_level(logging.WARNING):
-        assert app_module.load_probability_calibrator(str(invalid)) is None
+        assert load_probability_calibrator(str(invalid)) is None
     assert "No se pudo cargar" in caplog.text
 
 

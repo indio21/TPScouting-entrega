@@ -153,6 +153,7 @@ Los controles graduales usados por CI son:
 
 ```powershell
 .\.venv\Scripts\ruff.exe check scouting_app tests scripts --select E9,F63,F7,F82
+.\.venv\Scripts\ruff.exe check scouting_app tests --select F401,F841,RUF059,S110,S112
 .\.venv\Scripts\python.exe -m pip_audit --local --progress-spinner off
 ```
 

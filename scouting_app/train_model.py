@@ -45,7 +45,6 @@ from preprocessing import (
     save_preprocessor,
     TEMPORAL_TARGET_COLUMN,
     temporal_training_dataframe_from_engine,
-    training_dataframe_from_engine,
     transform_features,
 )
 
@@ -286,7 +285,7 @@ def safe_train_test_split(*arrays, test_size: float, stratify: Optional[np.ndarr
     except ValueError as exc:
         if stratify is None:
             raise
-        print(f"Advertencia: no se pudo estratificar el split: {exc}. Se continua sin estratificacion.")
+        logger.warning("No se pudo estratificar el split: %s. Se continua sin estratificacion.", exc)
         return train_test_split(
             *arrays,
             test_size=test_size,
@@ -486,7 +485,6 @@ def fit_probability_calibrator(y_true: np.ndarray, y_prob: np.ndarray) -> Tuple[
 
     best_method = "none"
     best_calibrator = None
-    best_prob = y_prob
     best_threshold, best_metrics = select_best_threshold(y_true, y_prob)
     best_score = (float(best_metrics["f1"] or 0.0), float(best_metrics["pr_auc"] or 0.0), -(float(brier_score_loss(y_true, y_prob))))
 
@@ -500,7 +498,6 @@ def fit_probability_calibrator(y_true: np.ndarray, y_prob: np.ndarray) -> Tuple[
         if score > best_score:
             best_method = method
             best_calibrator = calibrator
-            best_prob = calibrated_prob
             best_threshold = threshold
             best_metrics = metrics
             best_score = score
@@ -623,7 +620,6 @@ def train_model(
     best_calibration_method = "none"
     best_epoch = 1
     best_monitor = (-1.0, -1.0)
-    best_val_metrics: Dict[str, object] = classification_metrics(y_val, np.zeros(len(y_val)), 0.5)
     epochs_without_improvement = 0
     history = []
 
@@ -682,7 +678,6 @@ def train_model(
             best_calibrator = calibrator
             best_calibration_method = calibration_method
             best_epoch = epoch + 1
-            best_val_metrics = val_metrics
             epochs_without_improvement = 0
         else:
             epochs_without_improvement += 1
@@ -914,7 +909,7 @@ def main(
         }
         log_experiment(row)
     except Exception as exc:
-        print(f"Advertencia: no se pudo registrar la corrida del experimento: {exc}")
+        logger.warning("No se pudo registrar la corrida del experimento: %s", exc)
 
 
 def log_experiment(row: dict) -> None:

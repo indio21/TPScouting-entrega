@@ -34,6 +34,9 @@ jobs:
       - name: Ruff critical checks
         run: ruff check scouting_app tests scripts --select E9,F63,F7,F82 --output-format github
 
+      - name: Ruff gradual quality checks
+        run: ruff check scouting_app tests --select F401,F841,RUF059,S110,S112 --output-format github
+
       - name: Run tests
         env:
           APP_SECRET_KEY: test-secret
