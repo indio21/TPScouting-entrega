@@ -37,6 +37,7 @@ from ml.runtime import (
     load_probability_calibrator,
     load_runtime_artifacts,
 )
+from ml.scoring import combined_probability
 from preprocessing import (
     aggregate_attribute_history_dataframe,
     aggregate_availability_dataframe,
@@ -1263,32 +1264,20 @@ def combine_probability(base_prob: float, stats_summary: Dict[str, Optional[floa
     - avg_final_score: promedio histórico (1..10) si existe
     - fit_score: puntaje ponderado por posición (0..20) si existe
     """
-    avg_score = stats_summary.get("avg_final_score")
-    rating_weight = None if avg_score is None else min(max(float(avg_score) / 10.0, 0.0), 1.0)
-
-    fit_weight = None
-    if fit_score is not None:
-        try:
-            fit_weight = min(max(float(fit_score) / 20.0, 0.0), 1.0)
-        except Exception:
-            fit_weight = None
-
-    # Pesos (tuneables vía env vars)
     w_model = float(os.environ.get("POT_W_MODEL", "0.35"))
     w_rating = float(os.environ.get("POT_W_RATING", "0.35"))
     w_fit = float(os.environ.get("POT_W_FIT", "0.30"))
-
-    # Si no hay rating o fit, re-normalizamos para no castigar por falta de datos
-    components = [(w_model, base_prob)]
-    if rating_weight is not None:
-        components.append((w_rating, rating_weight))
-    if fit_weight is not None:
-        components.append((w_fit, fit_weight))
-
-    weight_sum = sum(w for w, _ in components) or 1.0
-    combined = sum(w * v for w, v in components) / weight_sum
-
-    return max(0.0, min(combined, 0.99))
+    try:
+        return combined_probability(
+            base_prob,
+            average_final_score=stats_summary.get("avg_final_score"),
+            fit_score=fit_score,
+            model_weight=w_model,
+            rating_weight=w_rating,
+            fit_weight=w_fit,
+        )
+    except (TypeError, ValueError):
+        return combined_probability(base_prob, model_weight=w_model)
 def stats_chart_payload(stats: List[PlayerStat]) -> Dict[str, List]:
     labels = []
     final_scores = []

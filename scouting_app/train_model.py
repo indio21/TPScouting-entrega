@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import random
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -63,13 +64,18 @@ DEFAULT_SPLITS_FILENAME = "training_splits.json"
 MODEL_CHECKPOINT_VERSION = 1
 logger = logging.getLogger(__name__)
 
-random.seed(SEED)
-np.random.seed(SEED)
-torch.manual_seed(SEED)
-if torch.cuda.is_available():
-    torch.cuda.manual_seed_all(SEED)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
+def set_global_seed(seed: int = SEED) -> None:
+    """Reinicia todos los generadores al comienzo de cada corrida reproducible."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+set_global_seed()
 
 
 class PlayerNet(nn.Module):
@@ -520,24 +526,46 @@ def train_model(
     epochs: int = 30,
     lr: float = 5e-4,
     patience: int = 8,
+    split_frames: Optional[Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]] = None,
 ):
     """Entrena la red y devuelve modelo, preprocesador, calibrador, metadata y splits."""
-    splits = safe_train_test_split(
-        features_df,
-        y,
-        test_size=DEFAULT_TEST_SIZE,
-        random_state=SEED,
-        stratify=choose_stratify_target(y),
-    )
-    X_train_val_df, X_test_df, y_train_val, y_test = splits
-    splits = safe_train_test_split(
-        X_train_val_df,
-        y_train_val,
-        test_size=DEFAULT_VAL_SIZE,
-        random_state=SEED,
-        stratify=choose_stratify_target(y_train_val),
-    )
-    X_train_df, X_val_df, y_train, y_val = splits
+    set_global_seed(SEED)
+    training_started_at = time.perf_counter()
+    if split_frames is None:
+        splits = safe_train_test_split(
+            features_df,
+            y,
+            test_size=DEFAULT_TEST_SIZE,
+            random_state=SEED,
+            stratify=choose_stratify_target(y),
+        )
+        X_train_val_df, X_test_df, y_train_val, y_test = splits
+        splits = safe_train_test_split(
+            X_train_val_df,
+            y_train_val,
+            test_size=DEFAULT_VAL_SIZE,
+            random_state=SEED,
+            stratify=choose_stratify_target(y_train_val),
+        )
+        X_train_df, X_val_df, y_train, y_val = splits
+    else:
+        X_train_df, X_val_df, X_test_df = (frame.copy() for frame in split_frames)
+        all_ids = [
+            set(frame["player_id"].astype(int).tolist())
+            for frame in (X_train_df, X_val_df, X_test_df)
+        ]
+        if any(frame.empty for frame in (X_train_df, X_val_df, X_test_df)):
+            raise ValueError("Los splits prefijados no pueden estar vacíos.")
+        if any(frame["player_id"].duplicated().any() for frame in (X_train_df, X_val_df, X_test_df)):
+            raise ValueError("Los splits prefijados contienen player_id duplicados.")
+        if all_ids[0] & all_ids[1] or all_ids[0] & all_ids[2] or all_ids[1] & all_ids[2]:
+            raise ValueError("Los splits prefijados comparten player_id.")
+        for frame in (X_train_df, X_val_df, X_test_df):
+            if TEMPORAL_TARGET_COLUMN not in frame.columns:
+                raise ValueError(f"Falta {TEMPORAL_TARGET_COLUMN} en un split prefijado.")
+        y_train = X_train_df[TEMPORAL_TARGET_COLUMN].astype(np.float32).to_numpy()
+        y_val = X_val_df[TEMPORAL_TARGET_COLUMN].astype(np.float32).to_numpy()
+        y_test = X_test_df[TEMPORAL_TARGET_COLUMN].astype(np.float32).to_numpy()
     split_artifact = build_split_artifact(X_train_df, X_val_df, X_test_df, y_train, y_val, y_test)
 
     preprocessor = build_preprocessor()
@@ -620,6 +648,12 @@ def train_model(
         model.eval()
         with torch.no_grad():
             val_logits = model(X_val_tensor).cpu().numpy().reshape(-1)
+            validation_loss = float(
+                criterion(
+                    torch.tensor(val_logits, dtype=torch.float32).view(-1, 1),
+                    tensor_from_array(y_val).view(-1, 1),
+                ).item()
+            )
         raw_val_prob = sigmoid_numpy(val_logits)
         calibrator, calibration_method, threshold = fit_probability_calibrator(y_val, raw_val_prob)
         val_prob = apply_probability_calibrator(calibrator, raw_val_prob)
@@ -631,6 +665,7 @@ def train_model(
             {
                 "epoch": epoch + 1,
                 "loss": float(np.mean(batch_losses) if batch_losses else 0.0),
+                "validation_loss": validation_loss,
                 "val_pr_auc": monitor_pr_auc,
                 "val_f1": monitor_f1,
                 "threshold": float(threshold),
@@ -712,12 +747,14 @@ def train_model(
         f"F1: {avg_skill_test_metrics['f1']}"
     )
 
+    training_duration_seconds = time.perf_counter() - training_started_at
     metadata = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "seed": SEED,
         "config": {
             "epochs_requested": int(epochs),
             "epochs_trained": int(history[-1]["epoch"]) if history else 0,
+            "training_duration_seconds": round(float(training_duration_seconds), 4),
             "learning_rate": float(lr),
             "patience": int(patience),
             "batch_size": int(min(BATCH_SIZE, len(X_train_df))) if len(X_train_df) else 0,
@@ -740,6 +777,9 @@ def train_model(
             "checkpoint_version": MODEL_CHECKPOINT_VERSION,
             "input_dim": int(input_dim),
             "class": "PlayerNet",
+            "trainable_parameters": int(sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)),
+            "buffer_elements": int(sum(buffer.numel() for buffer in model.buffers())),
+            "state_dict_elements": int(sum(value.numel() for value in model.state_dict().values())),
         },
         "dataset": {
             "train_size": int(len(X_train_df)),

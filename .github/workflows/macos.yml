@@ -1,0 +1,75 @@
+name: macOS compatibility
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/macos.yml"
+      - "requirements.txt"
+      - "requirements-dev.txt"
+      - "scouting_app/**"
+      - "scripts/iniciar_demo.py"
+      - "tests/**"
+
+jobs:
+  verify-macos:
+    name: Apple Silicon / Python 3.11
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install macOS dependencies
+        run: |
+          python -m pip install --upgrade pip==26.2.1 setuptools==83.0.0
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-dev.txt
+          python -m pip check
+
+      - name: Record platform and dependency versions
+        run: |
+          python -VV
+          uname -a
+          python -c "import platform, torch; print('platform=', platform.platform()); print('machine=', platform.machine()); print('torch=', torch.__version__); print('mps_built=', torch.backends.mps.is_built()); print('mps_available=', torch.backends.mps.is_available())"
+
+      - name: Verify runtime artifacts load
+        env:
+          PYTHONPATH: scouting_app
+        run: |
+          python - <<'PY'
+          from ml.runtime import load_runtime_artifacts
+
+          model, preprocessor, calibrator = load_runtime_artifacts(
+              "scouting_app/model.pt",
+              "scouting_app/preprocessor.joblib",
+              "scouting_app/probability_calibrator.joblib",
+              allow_retrain=False,
+          )
+          assert model is not None
+          assert preprocessor is not None
+          assert calibrator is not None
+          print("Runtime artifacts loaded successfully")
+          PY
+
+      - name: Ruff critical checks
+        run: ruff check scouting_app tests scripts --select E9,F63,F7,F82 --output-format github
+
+      - name: Run test suite
+        env:
+          APP_SECRET_KEY: test-secret
+          LOG_LEVEL: INFO
+        run: pytest -q --cov=scouting_app --cov-report=term-missing --cov-fail-under=80
+
+      - name: Prepare portable demo in temporary database
+        env:
+          APP_SECRET_KEY: macos-ci-demo-secret
+        run: python scripts/iniciar_demo.py --recrear --solo-preparar --db-path "$RUNNER_TEMP/tpscouting_demo.db"

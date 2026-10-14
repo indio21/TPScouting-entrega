@@ -1,6 +1,6 @@
 # TPScouting - Scouting Inteligente con IA (MVP)
 
-[![CI](https://github.com/indio21/TPScouting-entrega/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/indio21/TPScouting-entrega/actions/workflows/ci.yml)
+[![CI](https://github.com/indio21/TPScouting/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/indio21/TPScouting/actions/workflows/ci.yml)
 
 Trabajo final orientado al scouting de futbol juvenil, con una app web para:
 
@@ -10,18 +10,9 @@ Trabajo final orientado al scouting de futbol juvenil, con una app web para:
 - estimar potencial con un modelo MLP (PyTorch)
 - visualizar datos en dashboard y fichas
 
-## Documento académico
-
-- [Trabajo final en PDF](documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_2026-10-10.pdf)
-- [Trabajo final editable en Word](documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_2026-10-10.docx)
-
-Ambos archivos corresponden a la misma versión verificada. El PDF es la copia
-recomendada para lectura y evaluación; el Word se incluye para revisar campos,
-índices y estructura editable.
-
 ## Demo local portable
 
-Después de instalar las dependencias según `GUIA_DEMO_PROFESOR.md`, este comando genera y verifica `60` jugadores sintéticos, crea un administrador local e inicia la aplicación:
+Despues de instalar `requirements.txt`, este comando genera y verifica `60` jugadores sinteticos, crea un administrador local e inicia la aplicacion:
 
 ```powershell
 .\.venv\Scripts\python.exe .\scripts\iniciar_demo.py
@@ -64,11 +55,11 @@ Abrir `http://127.0.0.1:5000/` con usuario `profesor_demo` y contrasena `DemoPro
 
 ## Estado actual
 
-- Fecha de referencia: 2026-10-10.
+- Fecha de referencia: 2026-08-26.
 - Escala de atributos tecnicos, fisicos en escala y reportes scout: `1-20`.
 - Potencial bajo: menor a `60%`; medio: `60%` a `79%`; alto: `80%` o mas.
 - La edad y categoria juvenil se derivan de `birth_date`; `Player.age` queda como compatibilidad operativa.
-- Tests al último cierre: `116 passed, 1 skipped, 4 warnings`; cobertura total `83,74 %`.
+- Tests al ultimo cierre: `87 passed, 1 skipped, 4 warnings`.
 - La app, los artefactos ML y los diagramas auditados estan alineados con la entrega escrita. La evidencia de Render es historica; la disponibilidad actual del servicio no es un requisito para ejecutar y revisar el MVP localmente.
 
 ## Bases de datos del MVP
@@ -104,10 +95,13 @@ Windows y Linux CPU usan el mismo snapshot que CI y Render:
 .\.venv\Scripts\python.exe scouting_app\app.py
 ```
 
-En macOS se instala `requirements.txt` en lugar de los dos primeros archivos,
-porque PyTorch publica allí el wheel estándar sin sufijo `+cpu`. Esta rama fue
-probada localmente en Windows 11 con Python 3.11.9; el workflow de CI configura
-Linux con Python 3.11 y 3.12. No se afirma una ejecución probada en macOS.
+En macOS Apple Silicon se instala `requirements.txt` en lugar de los dos primeros
+archivos, porque PyTorch publica allí el wheel estándar sin sufijo `+cpu`. La
+instalación, los artefactos, la suite y la demo se verificaron en un runner arm64
+`macos-15` con Python 3.11 el 2026-10-14. PyTorch 2.14.1 no publica un wheel para
+macOS Intel, por lo que esa arquitectura no está soportada por este entorno fijado.
+Windows 11 con Python 3.11.9 se verificó localmente; la CI cubre Linux con Python
+3.11 y 3.12.
 
 `requirements.txt` contiene dependencias directas, `requirements-lock.txt` fija
 el runtime transitivo CPU, `requirements-dev.txt` contiene pruebas/auditoría/lint
@@ -160,11 +154,10 @@ Los controles graduales usados por CI son:
 ```powershell
 .\.venv\Scripts\ruff.exe check scouting_app tests scripts --select E9,F63,F7,F82
 .\.venv\Scripts\python.exe -m pip_audit --local --progress-spinner off
-.\.venv\Scripts\python.exe -m pip_audit -r requirements.txt --no-deps --progress-spinner off
 ```
 
-CI exige cobertura total mínima de `80%`; el umbral no reemplaza la revisión de
-cobertura por módulo.
+CI exige cobertura total mínima de `80%`, igual a la cobertura medida el
+2026-10-05; el umbral no reemplaza la revisión de cobertura por módulo.
 
 Smoke visual opcional con Playwright:
 
