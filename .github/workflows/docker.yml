@@ -1,0 +1,57 @@
+name: Container
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/docker.yml"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "requirements-lock.txt"
+      - "requirements-torch-cpu.txt"
+      - "scouting_app/**"
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build --tag tpscouting:ci .
+
+      - name: Start synthetic demo
+        run: |
+          docker run --detach --name tpscouting-smoke --publish 8000:8000 \
+            --env APP_SECRET_KEY=ci-container-secret-2026 \
+            --env APP_DB_URL=sqlite:////app/demo.db \
+            --env TRAINING_DB_URL=sqlite:////app/demo.db \
+            --env ENV=production \
+            --env ALLOW_SQLITE_IN_PRODUCTION=1 \
+            --env DEMO_SEED_ON_STARTUP=1 \
+            --env DEMO_SEED_PLAYERS=20 \
+            --env DEMO_SEED=42 \
+            --env ADMIN_USERNAME=container_admin \
+            --env ADMIN_PASSWORD=ContainerDemo123 \
+            --env ALLOW_DEFAULT_ADMIN=false \
+            tpscouting:ci
+
+      - name: Smoke test
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error http://127.0.0.1:8000/health; then
+              curl --fail --silent --show-error http://127.0.0.1:8000/login > /dev/null
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs tpscouting-smoke
+          exit 1
+
+      - name: Container logs
+        if: failure()
+        run: docker logs tpscouting-smoke
+
+      - name: Stop container
+        if: always()
+        run: docker rm --force tpscouting-smoke || true

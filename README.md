@@ -260,3 +260,28 @@ No se deben cargar datos personales reales, especialmente de menores. Antes de
 cualquier piloto institucional deben completarse y probarse las puertas legales,
 operativas y técnicas documentadas en
 [`docs/REAL_DATA_READINESS.md`](docs/REAL_DATA_READINESS.md).
+
+## Configuración y contenedor
+
+`.env.example` documenta las variables disponibles sin incluir credenciales
+reales. La aplicación no carga archivos `.env` automáticamente; plataformas como
+Render configuran las variables directamente y Docker acepta el archivo mediante
+`--env-file`.
+
+El `Dockerfile` instala el runtime Linux CPU fijado por los mismos manifests que
+CI y Render, ejecuta con un usuario sin privilegios y expone `/health`. Para una
+demo local descartable con SQLite:
+
+```bash
+docker build -t tpscouting .
+docker run --rm -p 8000:8000 --env-file .env -v tpscouting-demo:/data tpscouting
+```
+
+Al usar la configuración SQLite comentada en `.env.example`, la base queda en el
+volumen `tpscouting-demo`. Para un despliegue persistente se recomienda
+PostgreSQL. Docker no habilita el uso de datos reales de menores.
+
+El proyecto todavía no declara una licencia de reutilización. Publicar el código
+en GitHub permite su lectura, pero no concede por sí solo permiso para copiarlo,
+modificarlo o redistribuirlo. La licencia debe elegirse de forma explícita antes
+de autorizar esos usos.
