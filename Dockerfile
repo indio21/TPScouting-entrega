@@ -1,3 +1,4 @@
+# No LICENSE is distributed with this delivery; all rights are reserved.
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
