@@ -281,7 +281,11 @@ Al usar la configuración SQLite comentada en `.env.example`, la base queda en e
 volumen `tpscouting-demo`. Para un despliegue persistente se recomienda
 PostgreSQL. Docker no habilita el uso de datos reales de menores.
 
-El proyecto todavía no declara una licencia de reutilización. Publicar el código
-en GitHub permite su lectura, pero no concede por sí solo permiso para copiarlo,
-modificarlo o redistribuirlo. La licencia debe elegirse de forma explícita antes
-de autorizar esos usos.
+## Derechos y licencia
+
+Este repositorio no incluye un archivo `LICENSE`. Por decisión de su titular,
+todos los derechos se encuentran reservados. La disponibilidad pública del
+código permite examinar el proyecto y realizar su evaluación académica, pero no
+concede una autorización general para copiarlo, modificarlo, redistribuirlo,
+sublicenciarlo o explotarlo comercialmente. Cualquier autorización adicional
+debe otorgarse de forma expresa por el titular.

@@ -1,5 +1,11 @@
 # Guia De Evaluacion Rapida
 
+## Derechos y licencia
+
+El repositorio se entrega para su revisión académica y no incluye un archivo
+`LICENSE`. Todos los derechos se encuentran reservados; la entrega no concede
+una autorización general de copia, modificación o redistribución.
+
 Esta guia permite revisar la aplicacion sin descargar una base de datos externa, ejecutar el entrenamiento completo ni depender de Render.
 
 ## Alcance de los datos
