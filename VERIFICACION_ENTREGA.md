@@ -2,10 +2,14 @@
 
 ## Archivos finales
 
-- [Word](documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_ARIAL_2026-10-20.docx)
-  - SHA-256: `29ACEE4C6117C143FA7086E7F15A2FDB27F6716ADE3261BD23DC32F960BCB03E`.
-- [PDF](documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_ARIAL_2026-10-20.pdf)
-  - SHA-256: `E97B4902D8A02AEC2C883CF0A02A96E8782ADBD48C1FCF861BEF755786B2944B`.
+- [Word](documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_ARIAL_LISTAS_ALINEADAS_2026-10-20.docx)
+  - SHA-256: `09E39E79BBFADB3154396FF91FCC606F53B9BD2D552ABC833FB263B8C9958EAF`.
+- [PDF](documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_ARIAL_LISTAS_ALINEADAS_2026-10-20.pdf)
+  - SHA-256: `836082639D4A00EE4A315FA9E8D7F3ABDAB2161253E528F795E8AF5216B590FE`.
+
+Las 45 entradas de figuras y tablas tienen sus números de página alineados a la
+derecha en una columna común, con puntos guía. El texto del cuerpo, las tablas
+y las imágenes permanecen sin cambios respecto de la versión aprobada.
 
 El PDF tiene 97 páginas. Se verificaron 88 entradas del índice y 45 entradas de
 figuras/tablas, numeración continua e inicios independientes de los preliminares
@@ -41,7 +45,7 @@ se consulta en el historial de Git sin introducir en el documento su propio hash
 futuro:
 
 ```bash
-git log -1 --format="%H %s" -- documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_ARIAL_2026-10-20.docx documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_ARIAL_2026-10-20.pdf
+git log -1 --format="%H %s" -- documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_ARIAL_LISTAS_ALINEADAS_2026-10-20.docx documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_ARIAL_LISTAS_ALINEADAS_2026-10-20.pdf
 ```
 
 La demostración utiliza datos sintéticos y no constituye validación deportiva
