@@ -1,6 +1,8 @@
 # TPScouting - Scouting Inteligente con IA (MVP)
 
-[![CI](https://github.com/indio21/TPScouting/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/indio21/TPScouting/actions/workflows/ci.yml)
+Documento final: [Word](documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_2026-10-20.docx) | [PDF](documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_2026-10-20.pdf).
+
+[![CI](https://github.com/indio21/TPScouting-entrega/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/indio21/TPScouting-entrega/actions/workflows/ci.yml)
 
 Trabajo final orientado al scouting de futbol juvenil, con una app web para:
 
@@ -55,11 +57,11 @@ Abrir `http://127.0.0.1:5000/` con usuario `profesor_demo` y contrasena `DemoPro
 
 ## Estado actual
 
-- Fecha de referencia: 2026-08-26.
+- Fecha de referencia: 2026-10-20.
 - Escala de atributos tecnicos, fisicos en escala y reportes scout: `1-20`.
 - Potencial bajo: menor a `60%`; medio: `60%` a `79%`; alto: `80%` o mas.
 - La edad y categoria juvenil se derivan de `birth_date`; `Player.age` queda como compatibilidad operativa.
-- Tests al ultimo cierre: `87 passed, 1 skipped, 4 warnings`.
+- Tests al ultimo cierre local: `123 passed, 1 skipped, 4 warnings`; cobertura `83,29%`.
 - La app, los artefactos ML y los diagramas auditados estan alineados con la entrega escrita. La evidencia de Render es historica; la disponibilidad actual del servicio no es un requisito para ejecutar y revisar el MVP localmente.
 
 ## Bases de datos del MVP
