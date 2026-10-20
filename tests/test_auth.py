@@ -1,6 +1,7 @@
 import re
 
 import pytest
+from sqlalchemy.orm import Session as DatabaseSession
 from werkzeug.security import generate_password_hash
 from flask import url_for
 from werkzeug.exceptions import BadRequest
@@ -84,6 +85,80 @@ def test_login_success_sets_session_and_redirects(client, app_module, db):
     )
     assert resp.status_code in (301, 302)
     assert "/players" in resp.headers.get("Location", "")
+
+
+@pytest.mark.parametrize(
+    "credentials",
+    [
+        {"username": "missing_credentials"},
+        {"username": "missing_credentials", "password": ""},
+        {"password": "ClavePrueba123"},
+        {"username": "", "password": "ClavePrueba123"},
+    ],
+)
+def test_login_rejects_missing_credentials_without_authenticating(
+    client, app_module, db, credentials
+):
+    _create_user(db, app_module.User, "missing_credentials", "ClavePrueba123")
+    token = _get_csrf_token(client)
+
+    response = client.post("/login", data={"csrf_token": token, **credentials})
+
+    assert response.status_code == 400
+    assert "Usuario o contrasena invalidos" in response.get_data(as_text=True)
+    with client.session_transaction() as sess:
+        assert "user_id" not in sess
+    assert client.get("/players").status_code == 302
+
+
+@pytest.mark.parametrize("invalid_token", ["é", "令牌", "token\N{SNOWMAN}"])
+def test_login_rejects_non_ascii_csrf_without_authenticating(
+    client, app_module, db, invalid_token
+):
+    _create_user(db, app_module.User, "unicode_csrf", "ClavePrueba123")
+    _get_csrf_token(client)
+
+    response = client.post(
+        "/login",
+        data={
+            "username": "unicode_csrf",
+            "password": "ClavePrueba123",
+            "csrf_token": invalid_token,
+        },
+    )
+
+    assert response.status_code == 400
+    with client.session_transaction() as sess:
+        assert "user_id" not in sess
+
+
+def test_login_closes_database_session_when_password_check_raises(
+    client, app_module, db, monkeypatch
+):
+    _create_user(db, app_module.User, "hash_failure", "ClavePrueba123")
+    token = _get_csrf_token(client)
+    login_globals = app_module.app.view_functions["auth.login"].__globals__
+    closed = []
+    original_close = DatabaseSession.close
+
+    def tracked_close(database):
+        closed.append(database)
+        original_close(database)
+
+    def failed_hash_check(*args):
+        raise RuntimeError("simulated hash failure")
+
+    monkeypatch.setattr(DatabaseSession, "close", tracked_close)
+    monkeypatch.setitem(login_globals, "check_password_hash", failed_hash_check)
+    with pytest.raises(RuntimeError, match="simulated hash failure"):
+        client.post(
+            "/login",
+            data={"username": "hash_failure", "password": "ClavePrueba123", "csrf_token": token},
+        )
+    assert len(closed) == 1
+    assert closed[0] is not db
+    with client.session_transaction() as sess:
+        assert "user_id" not in sess
 
 
 def test_login_accepts_only_safe_internal_next_targets(client, app_module, db):

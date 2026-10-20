@@ -41,4 +41,4 @@ Los tests usan bases temporales y no modifican bases locales reales.
 
 ## Verificacion local del 20/10/2026
 
-Suite: `123 passed, 1 skipped, 4 warnings`; cobertura `83,29%`. La prueba omitida es el smoke visual opt-in. Las cuatro advertencias conocidas corresponden a columnas completamente NaN en dos pruebas de preprocesamiento.
+Suite: `131 passed, 1 skipped, 4 warnings`; cobertura `83,31%`. La prueba omitida es el smoke visual opt-in. Las cuatro advertencias conocidas corresponden a columnas completamente NaN en dos pruebas de preprocesamiento.

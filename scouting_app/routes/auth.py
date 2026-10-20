@@ -45,16 +45,21 @@ def create_auth_blueprint(
                     ),
                     429,
                 )
-            db = Session()
-            user = db.query(User).filter(User.username == username).first()
+            if not username or not password:
+                register_failed_login(username)
+                return render_template("login.html", error="Usuario o contrasena invalidos"), 400
             authenticated_user = None
-            if user and check_password_hash(user.password_hash, password):
-                authenticated_user = {
-                    "id": user.id,
-                    "username": user.username,
-                    "role": normalize_role(user.role),
-                }
-            db.close()
+            db = Session()
+            try:
+                user = db.query(User).filter(User.username == username).first()
+                if user and check_password_hash(user.password_hash, password):
+                    authenticated_user = {
+                        "id": user.id,
+                        "username": user.username,
+                        "role": normalize_role(user.role),
+                    }
+            finally:
+                db.close()
             if authenticated_user:
                 clear_failed_logins(username)
                 session.clear()

@@ -61,7 +61,7 @@ Abrir `http://127.0.0.1:5000/` con usuario `profesor_demo` y contrasena `DemoPro
 - Escala de atributos tecnicos, fisicos en escala y reportes scout: `1-20`.
 - Potencial bajo: menor a `60%`; medio: `60%` a `79%`; alto: `80%` o mas.
 - La edad y categoria juvenil se derivan de `birth_date`; `Player.age` queda como compatibilidad operativa.
-- Tests al ultimo cierre local: `123 passed, 1 skipped, 4 warnings`; cobertura `83,29%`.
+- Tests al ultimo cierre local: `131 passed, 1 skipped, 4 warnings`; cobertura `83,31%`.
 - La app, los artefactos ML y los diagramas auditados estan alineados con la entrega escrita. La evidencia de Render es historica; la disponibilidad actual del servicio no es un requisito para ejecutar y revisar el MVP localmente.
 
 ## Bases de datos del MVP

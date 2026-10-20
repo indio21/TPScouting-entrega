@@ -73,6 +73,10 @@ def require_csrf(form, headers, session_obj) -> None:
     expected_token = session_obj.get("csrf_token")
     if not isinstance(token, str) or not isinstance(expected_token, str):
         abort(400)
+    # Generated tokens are ASCII. compare_digest(str, str) raises TypeError
+    # for non-ASCII inputs, which must instead be rejected as a bad request.
+    if not token or not expected_token or not token.isascii() or not expected_token.isascii():
+        abort(400)
     if not secrets.compare_digest(token, expected_token):
         abort(400)
 
