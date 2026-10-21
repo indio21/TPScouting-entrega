@@ -1,8 +1,6 @@
-# TPScouting - Scouting Inteligente con IA (MVP)
+# TPScouting - Scouting inteligente aplicado al fútbol juvenil mediante Machine Learning
 
-Documento final: [Word](documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_ARIAL_LISTAS_ALINEADAS_2026-10-20.docx) | [PDF](documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_ARIAL_LISTAS_ALINEADAS_2026-10-20.pdf).
-
-Evidencia de la versión funcional y hashes de los documentos: [VERIFICACION_ENTREGA.md](VERIFICACION_ENTREGA.md).
+Documento final: [Word](<documento/Trabajo Final_Solari Pablo_21-10-2026.docx>) | [PDF](<documento/Trabajo Final_Solari Pablo_21-10-2026.pdf>).
 
 [![CI](https://github.com/indio21/TPScouting-entrega/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/indio21/TPScouting-entrega/actions/workflows/ci.yml)
 
@@ -16,7 +14,9 @@ Trabajo final orientado al scouting de futbol juvenil, con una app web para:
 
 ## Demo local portable
 
-Despues de instalar `requirements.txt`, este comando genera y verifica `60` jugadores sinteticos, crea un administrador local e inicia la aplicacion:
+Después de instalar las dependencias indicadas para su plataforma en
+[GUIA_DEMO_PROFESOR.md](GUIA_DEMO_PROFESOR.md), este comando genera y verifica
+`60` jugadores sintéticos, crea un administrador local e inicia la aplicación:
 
 ```powershell
 .\.venv\Scripts\python.exe .\scripts\iniciar_demo.py
@@ -36,26 +36,21 @@ Abrir `http://127.0.0.1:5000/` con usuario `profesor_demo` y contrasena `DemoPro
 
 - `scouting_app/`: aplicacion principal (backend, templates, logica y scripts operativos)
 - `tests/`: pruebas automatizadas (auth, paginas, permisos)
-- `docs/flujo_reproducible_mvp.md`: corrida oficial para regenerar datos, modelo y evaluacion
+- `docs/puesta_en_marcha.md`: instalación, demo y pruebas por plataforma
 - `docs/guia_indicadores_app.md`: explicacion de los indicadores visibles de proyeccion
-- `docs/contexto_para_nuevo_chat.md`: resumen compacto para continuar el proyecto sin perder contexto
-- `docs/comparacion_falencias_codigo_fuente_2026-04-27.md`: estado punto por punto frente al informe de codigo fuente
-- `docs/explicacion_cambios_revision_codigo_2026-04-27.md`: explicacion simple de los ultimos cambios de hardening
-- `docs/model_training_evidence.md`: evidencia tecnica del entrenamiento y comparacion con baseline
-- `docs/model_training_plan.md`: plan tecnico vigente del modelo
-- `docs/auditoria_pendientes_2026-05-17.md`: riesgos vivos y cierre por fases de auditoria
-- `docs/cierre_pre_entrega_word_render_2026-05-18.md`: cierre previo a entrega con Word final y deploy Render
+- `docs/modelo_ml.md`: artefactos, métricas históricas y límites del modelo
+- `docs/REAL_DATA_READINESS.md`: controles pendientes antes de usar datos reales
 - `scripts/smoke_render.py`: smoke HTTP contra la URL real de Render
 - `scripts/iniciar_demo.py`: genera y ejecuta una demo local portable con 60 jugadores
 - `GUIA_DEMO_PROFESOR.md`: instrucciones de evaluacion, reinicio y alcance de los datos demo
 - `render.yaml`: configuracion de deploy en Render
 - `RUNBOOK.md`: guia operativa (healthcheck, backup/restore, admin, incidentes)
 
-## Ramas de trabajo
+## Versión de entrega
 
-- `training`: rama estable cerrada con las correcciones del MVP.
-- `ux-crud-polish`: rama actual de pulido UX/UI y cierre de auditoria, sincronizada con GitHub.
-- `auditoria-correcciones-mvp`: rama de correcciones de auditoria ya mergeada en `ux-crud-polish`.
+La rama vigente es `main`. El Word/PDF final y sus hashes se identifican en
+`VERIFICACION_ENTREGA.md` del repositorio de entrega. Las ramas de desarrollo
+anteriores no son necesarias para ejecutar la demo.
 
 ## Estado actual
 
@@ -75,7 +70,9 @@ El proyecto usa dos bases separadas. En local pueden ser SQLite y en despliegue 
 
 En PostgreSQL, la app acepta URLs `postgresql://...` y `postgres://...`; internamente las normaliza para SQLAlchemy con `psycopg`.
 
-Las bases son generadas localmente y no son la fuente principal del repo. Para regenerarlas, seguir `docs/flujo_reproducible_mvp.md`.
+Las bases se generan localmente y no se distribuyen en Git. Para evaluar la
+aplicación, usar la demo de `GUIA_DEMO_PROFESOR.md`. Las nuevas corridas ML deben
+guardar sus salidas aparte, siguiendo `RUNBOOK.md`, sin reemplazar el runtime.
 
 Para que Render pueda ejecutar inferencia sin entrenar en produccion, el repo incluye
 solo los artefactos chicos de runtime:
@@ -161,8 +158,8 @@ Los controles graduales usados por CI son:
 .\.venv\Scripts\python.exe -m pip_audit --local --progress-spinner off
 ```
 
-CI exige cobertura total mínima de `80%`, igual a la cobertura medida el
-2026-10-05; el umbral no reemplaza la revisión de cobertura por módulo.
+CI exige cobertura total mínima de `80%`; la última cobertura local registrada
+es `83,31%`. El umbral no reemplaza la revisión de cobertura por módulo.
 
 Smoke visual opcional con Playwright:
 

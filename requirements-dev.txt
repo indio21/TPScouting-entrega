@@ -4,3 +4,5 @@ pytest-cov==7.1.0
 playwright==1.59.0
 ruff==0.16.10
 pip-audit==2.10.1
+# Bundle de certificados usado por requests/pip-audit; versión corregida auditada.
+certifi==2026.10.19

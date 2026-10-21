@@ -13,7 +13,7 @@ venv/
 !.env.example
 *.log
 *.docx
-!documento/TRABAJO_FINAL_TPScouting_ENTREGA_FINAL_ARIAL_LISTAS_ALINEADAS_2026-10-20.docx
+!documento/Trabajo Final_Solari Pablo_21-10-2026.docx
 
 # OS
 .DS_Store

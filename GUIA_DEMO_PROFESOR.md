@@ -28,11 +28,22 @@ Desde la raiz del repositorio:
 ```powershell
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-torch-cpu.txt
 .\.venv\Scripts\python.exe .\scripts\iniciar_demo.py
 ```
 
-### Linux o macOS Apple Silicon
+### Linux CPU
+
+```bash
+python3.11 -m venv .venv
+./.venv/bin/python -m pip install --upgrade pip
+./.venv/bin/python -m pip install -r requirements-lock.txt
+./.venv/bin/python -m pip install -r requirements-torch-cpu.txt
+./.venv/bin/python ./scripts/iniciar_demo.py
+```
+
+### macOS Apple Silicon
 
 ```bash
 python3.11 -m venv .venv
@@ -47,6 +58,10 @@ La versión fijada de PyTorch dispone de wheel para macOS arm64, pero no para ma
 Intel. En equipos Intel, la instalación de `requirements.txt` se detendrá de forma
 explícita; no se recomienda sustituir PyTorch por otra versión sin repetir las
 pruebas de compatibilidad y de los artefactos.
+
+Windows/Linux CPU usan el mismo runtime fijado que CI, Render y Docker. macOS
+Apple Silicon usa `requirements.txt`, porque su wheel estándar no proviene del
+índice CPU. Python soportado: 3.11 y 3.12; el runner macOS verifica Python 3.11.
 
 Credenciales locales de evaluacion:
 
