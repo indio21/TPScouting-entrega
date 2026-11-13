@@ -1,23 +1,30 @@
-# Verificación de la entrega — revisión del 20/10/2026
+# Verificación de la entrega — correcciones de noviembre, 12/11/2026
 
-## Documento final designado por el autor
+## Documento final actualizado
 
-- [Word](<documento/Trabajo Final_Solari Pablo_21-10-2026.docx>)
-  - SHA-256: `81A743DF38FB32820EA7DC3BEC247F57CCE6F3F826510DFEA2ED9CF3D63A131C`.
-- [PDF](<documento/Trabajo Final_Solari Pablo_21-10-2026.pdf>)
-  - SHA-256: `587FB8393C6ED864A2FE6399548E458F8E2654943DD939649ED01856C31DBCC2`.
+- [Word](<documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_12-11-2026.docx>)
+  - SHA-256: `C6BEB90582E818D371AC9CF96EBAB0C1A1DA025C6DE689DC2383EB606DBFDC79`.
+- [PDF](<documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_12-11-2026.pdf>)
+  - SHA-256: `E43883FC89601B5E14B7144BA885BD6454C84C2FBCF0CC139B9DBC5621EAE5F0`.
 
-El nombre con fecha 21/10/2026 fue elegido por el autor. El Word se conserva
-idéntico al archivo proporcionado, sin guardar cambios automáticos de campos
-ni formato. Su PDF fue exportado con Microsoft Word y tiene 97 páginas.
-Se respetan el nuevo título con Machine Learning y los cambios de redacción.
+Esta copia incorpora exclusivamente las cuatro correcciones docentes de
+noviembre: retirada de la leyenda huérfana, descripción de /health alineada
+con el código, URL del smoke sin concatenación y explicación del límite de
+intentos de acceso. Después se renumeraron las tablas y referencias afectadas.
+La tabla de endpoints es ahora Tabla 4-5. La versión original del 21/10 se
+conserva como respaldo en el repositorio propio y en el historial de Git.
 
-Se verificaron 88 entradas del índice y 45 de figuras/tablas contra las páginas
-reales. Los 45 números de página de las listas están alineados a la derecha.
-Se conservan 28 imágenes, 19 tablas y 9 secciones, numeración continua e inicios
-independientes de preliminares y bibliografía. Sin campos rotos, páginas vacías
-ni tamaños Word explícitos menores de 10 pt. El PDF usa únicamente Arial y sus
-variantes textuales; las imágenes conservan su tipografía interna.
+El PDF tiene 97 páginas. Se verificaron 88 entradas del índice y 44 entradas de
+listas (25 figuras y 19 tablas), con sus páginas y alineación correctas.
+Las 19 tablas y 25 figuras tienen leyendas asociadas; la Figura 6-5 incluye
+sus tres imágenes a), b), c). Se comprobaron 107 referencias, la secuencia de
+84 títulos numerados y 23 apariciones de URL, sin destinos internos ausentes,
+saltos de numeración ni URL concatenadas o duplicadas accidentalmente.
+
+Se conservan las 28 imágenes, tipografía Arial, tamaños y formato originales,
+19 tablas y nueve secciones. No cambiaron métricas, resultados ni bibliografía.
+La comparación confirmó que el resto del contenido permanece intacto.
+No se modificaron código, modelos, dependencias ni configuración en noviembre.
 
 ## Código y comprobaciones
 
@@ -39,7 +46,7 @@ antiguos, instalación por plataforma, semántica ML y procedimientos operativos
 El lock excluye Gunicorn en Windows y las herramientas de desarrollo fijan
 `certifi==2026.10.19`. No se cambió PyTorch ni scikit-learn.
 
-`pip-audit` no detectó vulnerabilidades conocidas en los manifiestos revisados
+La auditoría `pip-audit` del 20/10/2026 no detectó vulnerabilidades conocidas en los manifiestos revisados
 ni en el entorno local tras actualizar certifi y Pillow. Pillow es una
 herramienta adicional local y no se añadió al runtime. El wheel `2.14.1+cpu`
 se contrasta también como `torch==2.14.1` del manifiesto directo, porque el
@@ -55,7 +62,7 @@ El Word cita el commit funcional probado. Su publicación documental se identifi
 externamente para evitar introducir su propio hash futuro dentro del archivo:
 
 ```bash
-git log -1 --format="%H %s" -- "documento/Trabajo Final_Solari Pablo_21-10-2026.docx" "documento/Trabajo Final_Solari Pablo_21-10-2026.pdf"
+git log -1 --format="%H %s" -- "documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_12-11-2026.docx" "documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_12-11-2026.pdf"
 ```
 
 Consultar la [CI de main](https://github.com/indio21/TPScouting-entrega/actions/workflows/ci.yml)
