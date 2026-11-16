@@ -1,30 +1,25 @@
-# Verificación de la entrega — correcciones de noviembre, 12/11/2026
+# Verificación de la entrega — versión del autor, 16/11/2026
 
-## Documento final actualizado
+## Documento final indicado por el autor
 
-- [Word](<documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_12-11-2026.docx>)
-  - SHA-256: `C6BEB90582E818D371AC9CF96EBAB0C1A1DA025C6DE689DC2383EB606DBFDC79`.
-- [PDF](<documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_12-11-2026.pdf>)
-  - SHA-256: `E43883FC89601B5E14B7144BA885BD6454C84C2FBCF0CC139B9DBC5621EAE5F0`.
+- [Word](<documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_16-11-2026.docx>)
+  - SHA-256: `9EECB118838786F78005D6444E49AAA4263585275C416BE28758717CD5FFC2B5`.
+- [PDF](<documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_16-11-2026.pdf>)
+  - SHA-256: `E666A8633A48DB37889C7E774FB4074F7C1289E7A56F2DCF9D2FF5FFA9B7C958`.
 
-Esta copia incorpora exclusivamente las cuatro correcciones docentes de
-noviembre: retirada de la leyenda huérfana, descripción de /health alineada
-con el código, URL del smoke sin concatenación y explicación del límite de
-intentos de acceso. Después se renumeraron las tablas y referencias afectadas.
-La tabla de endpoints es ahora Tabla 4-5. La versión original del 21/10 se
-conserva como respaldo en el repositorio propio y en el historial de Git.
+El autor corrigió el Word y lo indicó expresamente como el documento que enviará.
+Se publicó una copia idéntica por SHA-256 al archivo recibido del 16/11/2026.
+El PDF correspondiente se exportó con Microsoft Word y tiene 97 páginas.
+No se editó el Word ni se solicitaron actualizaciones de campos, índices o listas.
+Esta publicación no incluye una nueva revisión académica, de formato o del código.
 
-El PDF tiene 97 páginas. Se verificaron 88 entradas del índice y 44 entradas de
-listas (25 figuras y 19 tablas), con sus páginas y alineación correctas.
-Las 19 tablas y 25 figuras tienen leyendas asociadas; la Figura 6-5 incluye
-sus tres imágenes a), b), c). Se comprobaron 107 referencias, la secuencia de
-84 títulos numerados y 23 apariciones de URL, sin destinos internos ausentes,
-saltos de numeración ni URL concatenadas o duplicadas accidentalmente.
+Las comprobaciones de esta publicación se limitan a la identidad de los archivos,
+la exportación del PDF y la actualización de los enlaces de entrega.
 
-Se conservan las 28 imágenes, tipografía Arial, tamaños y formato originales,
-19 tablas y nueve secciones. No cambiaron métricas, resultados ni bibliografía.
-La comparación confirmó que el resto del contenido permanece intacto.
-No se modificaron código, modelos, dependencias ni configuración en noviembre.
+La versión anterior del 12/11 permanece en el historial de Git y como respaldo
+local en el proyecto principal. Sus comprobaciones estructurales corresponden
+a esa versión y no se presentan como una auditoría del nuevo documento.
+No se modificaron código, modelos, dependencias ni configuración de ejecución.
 
 ## Código y comprobaciones
 
@@ -62,7 +57,7 @@ El Word cita el commit funcional probado. Su publicación documental se identifi
 externamente para evitar introducir su propio hash futuro dentro del archivo:
 
 ```bash
-git log -1 --format="%H %s" -- "documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_12-11-2026.docx" "documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_12-11-2026.pdf"
+git log -1 --format="%H %s" -- "documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_16-11-2026.docx" "documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_16-11-2026.pdf"
 ```
 
 Consultar la [CI de main](https://github.com/indio21/TPScouting-entrega/actions/workflows/ci.yml)

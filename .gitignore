@@ -13,7 +13,7 @@ venv/
 !.env.example
 *.log
 *.docx
-!documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_12-11-2026.docx
+!documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_16-11-2026.docx
 
 # OS
 .DS_Store
