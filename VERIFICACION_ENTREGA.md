@@ -3,18 +3,24 @@
 ## Documento final indicado por el autor
 
 - [Word](<documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_16-11-2026.docx>)
-  - SHA-256: `9EECB118838786F78005D6444E49AAA4263585275C416BE28758717CD5FFC2B5`.
+  - SHA-256: `487A80BCC882168A59C5E9D952CCA7184FB089AC684B5734AF4508E9B06BB6D5`.
 - [PDF](<documento/Trabajo Final_Solari Pablo_CORRECCIONES_NOVIEMBRE_16-11-2026.pdf>)
-  - SHA-256: `E666A8633A48DB37889C7E774FB4074F7C1289E7A56F2DCF9D2FF5FFA9B7C958`.
+  - SHA-256: `BC651E98A002E9CA83BF6CACC3CA8C9318CF6F166B37A6BC4801CE3C44D365EF`.
 
 El autor corrigió el Word y lo indicó expresamente como el documento que enviará.
 Se publicó una copia idéntica por SHA-256 al archivo recibido del 16/11/2026.
 El PDF correspondiente se exportó con Microsoft Word y tiene 97 páginas.
 No se editó el Word ni se solicitaron actualizaciones de campos, índices o listas.
-Esta publicación no incluye una nueva revisión académica, de formato o del código.
+Esta copia incluye las últimas correcciones de puntuación y concordancia
+realizadas por el autor, y la página corregida de la Tabla 6-3 en la lista (53).
 
-Las comprobaciones de esta publicación se limitan a la identidad de los archivos,
-la exportación del PDF y la actualización de los enlaces de entrega.
+El repaso solicitado se limitó a tipografía, ortografía, gramática y
+correspondencia del índice con títulos y páginas. Se comprobaron las 88 entradas
+del índice general y las 44 entradas de figuras/tablas, sin diferencias de
+títulos o páginas. La tipografía visible es Arial, con tamaños nominales de
+10 puntos o más. Fue un repaso rápido, no una corrección lingüística exhaustiva
+ni una revisión técnica del contenido o del código. Los archivos publicados
+coinciden por SHA-256 con los de esta revisión.
 
 La versión anterior del 12/11 permanece en el historial de Git y como respaldo
 local en el proyecto principal. Sus comprobaciones estructurales corresponden
